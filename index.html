@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gautham Balaji - Portfolio</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- Scroll Progress Bar -->
+    <div id="scroll-progress"></div>
+    
+    <!-- Navigation -->
+    <nav class="navbar">
+        <ul>
+            <li><a href="#home" class="nav-link active">Home</a></li>
+            <li><a href="#projects" class="nav-link">Projects</a></li>
+            <li><a href="#skills" class="nav-link">Skills</a></li>
+            <li><a href="#experience" class="nav-link">Experience</a></li>
+            <li><a href="#education" class="nav-link">Education</a></li>
+            <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+    </nav>
+    
+    <!-- Theme Toggle & Back to Top -->
+    <button id="themeToggle" class="theme-toggle">☾</button>
+    <button id="backToTop" class="back-to-top">↑</button>
+    
+    <!-- 3D Background Container -->
+    <div id="three-container"></div>
+    
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <div class="hero-left">
+                <div class="profile-container">
+                    <img src="/assets/gautham3.png" alt="Gautham Balaji" class="profile-pic">
+                </div>
+                <div class="name-container">
+                    <h1 id="myName">Gautham Balaji</h1>
+                    <div class="animated-underline"></div>
+                </div>
+                <div class="typewriter">
+                    <span id="typewriter-text"></span>
+                    <span class="cursor">|</span>
+                </div>
+            </div>
+            <div class="hero-right">
+                <p>Hi, I'm Gautham – a developer passionate about crafting modern web experiences and exploring the potentials of artificial intelligence. I create innovative, clean, and responsive interfaces that not only look great but also solve real-world problems.</p>
+                <p>My work spans from building robust web applications to integrating cutting-edge AI solutions that enhance user experiences and drive efficiency. Whether it's optimizing performance, designing intuitive layouts, or developing intelligent algorithms, I am dedicated to merging technology with creativity to deliver exceptional results.</p>
+                <a href="#projects" class="glowing-button">View My Work</a>
+            </div>
+        </div>
+
+        <!-- CTA Section Below Hero -->
+        <div class="cta-container">
+            <h2>🚀 Let's Build Something Awesome Together!</h2>
+            <p>Have an exciting project or idea? Let's connect and create something extraordinary!</p>
+            <a href="#contact" class="cta-button">Contact Me</a>
+        </div>
+    </section>
+
+    
+    <!-- Projects Section -->
+    <section id="projects" class="projects">
+        <h2>Projects</h2>
+        <div class="project-slider">
+            <div class="swiper-wrapper">
+                <div class="project-item" data-modal-title="Car Management System" data-modal-details="A comprehensive car management system built with Python and MySQL. Features include inventory management, customer records, and sales tracking." data-github-url="https://github.com/gautham-balaji/Car-Management-System">
+                    <div class="project-image">
+                        <img src="/assets/car.png" alt="Car Management System">
+                    </div>
+                    <h3>Car Management System</h3>
+                    <p>A simple Car Management System using Python and MySQL.</p>
+                </div>
+                
+                <div class="project-item" data-modal-title="Music Bot" data-modal-details="An interactive Discord music bot built with Python. Features include playlist management, music streaming, and voice commands." data-github-url="https://github.com/gautham-balaji/Sonique">
+                    <div class="project-image">
+                        <img src="/assets/logo.png" alt="Music Bot">
+                    </div>
+                    <h3>Music Bot</h3>
+                    <p>An interactive music-playing bot built with Python.</p>
+                </div>
+                
+                <div class="project-item" data-modal-title="Portfolio Website" data-modal-details="A modern portfolio website built with HTML, CSS, and JavaScript. Features include responsive design, dark/light mode, and interactive elements." data-github-url="https://github.com/gautham-balaji/Portfolio">
+                    <div class="project-image">
+                        <img src="/assets/gb.png" alt="Portfolio Website">
+                    </div>
+                    <h3>Portfolio Website</h3>
+                    <p>A modern portfolio built with HTML, CSS, and JavaScript.</p>
+                </div>
+                
+                <div class="project-item" data-modal-title="Facial Expression Analysis" data-modal-details="Real-time facial expression analysis using AI. Features include emotion detection, facial recognition, and data visualization." data-github-url="https://github.com/gautham-balaji/Emotion-Detection">
+                    <div class="project-image">
+                        <img src="/assets/project4.png" alt="Facial Expression Analysis">
+                    </div>
+                    <h3>Facial Expression Analysis</h3>
+                    <p>Real-time facial expression analysis using AI.</p>
+                </div>
+                
+                <div class="project-item" data-modal-title="Fraud Detection System" data-modal-details="ML-based solution to prevent fraudulent transactions. Features include anomaly detection, real-time alerts, and comprehensive reporting." data-github-url="https://github.com/gautham-balaji/Fraud-Detection">
+                    <div class="project-image">
+                        <img src="/assets/project5.png" alt="Fraud Detection System">
+                    </div>
+                    <h3>Fraud Detection System</h3>
+                    <p>ML-based solution to prevent fraudulent transactions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+     <!-- Skills Section (Split Categories) -->
+  <section id="skills">
+    <h2>Skills</h2>
+    <div class="skills-categories">
+
+      <!-- Languages & Databases -->
+      <div class="skills-category">
+        <h3>Languages & Databases</h3>
+        <div class="skills-list">
+          <div class="skill">Python</div>
+          <div class="skill">Java</div>
+          <div class="skill">C++</div>
+          <div class="skill">JavaScript</div>
+          <div class="skill">HTML5</div>
+          <div class="skill">CSS3</div>
+          <div class="skill">MySQL</div>
+          <div class="skill">MongoDB</div>
+        </div>
+      </div>
+
+      <!-- Frameworks -->
+      <div class="skills-category">
+        <h3>Frameworks</h3>
+        <div class="skills-list">
+          <div class="skill">Django</div>
+          <div class="skill">Node.js</div>
+          <div class="skill">Express</div>
+          <div class="skill">Bootstrap</div>
+          <div class="skill">React</div>
+          <div class="skill">Angular</div>
+        </div>
+      </div>
+
+      <!-- Tools -->
+      <div class="skills-category">
+        <h3>Tools</h3>
+        <div class="skills-list">
+          <div class="skill">Git</div>
+          <div class="skill">GitHub</div>
+          <div class="skill">VSCode</div>
+          <div class="skill">Jupyter</div>
+          <div class="skill">Docker</div>
+          <div class="skill">AWS</div>
+          <div class="skill">Postman</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+    
+    <!-- Experience Section -->
+    <section id="experience" class="experience">
+        <h2>Experience</h2>
+        <div class="experience-container">
+            <div class="experience-item" data-aos="fade-up">
+                <div class="exp-logo">
+                    <img src="/assets/aiclub.png" alt="AI Club">
+                </div>
+                <h3>AI Club</h3>
+                <p>As a member of the AI Club at VIT Chennai, I actively participate in research projects, attend workshops, and collaborate on developing AI-based prototypes. I contribute to discussions on the latest AI trends and help implement innovative solutions that push the boundaries of technology.</p>
+            </div>
+            
+            <div class="experience-item" data-aos="fade-up" data-aos-delay="200">
+                <div class="exp-logo">
+                    <img src="/assets/ospc.png" alt="Open Source Programming Club">
+                </div>
+                <h3>Open Source Programming Club</h3>
+                <p>In the AI/ML department of the Open Source Programming Club at VIT Chennai, I contribute to open-source projects, write code, and participate in hackathons. This experience has deepened my understanding of machine learning algorithms and enhanced my problem-solving skills.</p>
+            </div>
+            
+            <div class="experience-item" data-aos="fade-up" data-aos-delay="400">
+                <div class="exp-logo">
+                    <img src="/assets/sports.png" alt="Sports Club">
+                </div>
+                <h3>Sports Club</h3>
+                <p>As part of the Event Management team in the Sports Club at VIT Chennai, I help organize and coordinate events, manage logistics, and ensure smooth execution of sports activities. This role has strengthened my leadership, teamwork, and organizational skills.</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Education Section -->
+    <section id="education" class="education">
+        <h2>Education</h2>
+        <div class="education-container">
+            <div class="education-item" data-aos="fade-up">
+                <div class="edu-logo">
+                    <img src="/assets/logo1.png" alt="Sankara Senior Secondary School">
+                </div>
+                <h3>Sankara Senior Secondary School</h3>
+                <p>I studied at Sankara Senior Secondary School until 10th.</p>
+            </div>
+            
+            <div class="education-item" data-aos="fade-up" data-aos-delay="200">
+                <div class="edu-logo">
+                    <img src="/assets/logo2.png" alt="Shraddha Children's Academy">
+                </div>
+                <h3>Shraddha Children's Academy</h3>
+                <p>I attended Shraddha Children's Academy for 11th and 12th.</p>
+            </div>
+            
+            <div class="education-item" data-aos="fade-up" data-aos-delay="400">
+                <div class="edu-logo">
+                    <img src="/assets/logo3.png" alt="VIT Chennai">
+                </div>
+                <h3>VIT Chennai</h3>
+                <p>Currently pursuing B.Tech AIML (2nd year) at VIT Chennai.</p>
+            </div>
+        </div>
+    </section>
+    
+<!-- Contact Section -->
+  <section id="contact">
+    <h2>Contact Me</h2>
+    <div class="contact-form">
+      <form>
+        <input type="text" placeholder="Name" required />
+        <input type="email" placeholder="Email" required />
+        <textarea placeholder="Message" required></textarea>
+        <button type="submit" class="button glow-button">Send Message</button>
+      </form>
+    </div>
+  </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/gautham-balaji-18722228b/" target="_blank">
+                <i class="fab fa-linkedin"></i>
+            </a>
+            <a href="https://github.com/gautham-balaji" target="_blank">
+                <i class="fab fa-github"></i>
+            </a>
+            <a href="https://www.instagram.com/gxxth.bin/" target="_blank">
+                <i class="fab fa-instagram"></i>
+            </a>
+        </div>
+        <p>&copy; 2025 Gautham Balaji. All rights reserved.</p>
+    </footer>
+
+    
+    <!-- Project Modal -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
