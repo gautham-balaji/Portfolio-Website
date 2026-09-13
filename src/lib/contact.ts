@@ -1,17 +1,31 @@
 /**
- * Contact form: shared validation schema, bot heuristics, and response types.
+ * Contact form: constants, bot heuristics, and the response contract.
  *
- * Imported by BOTH the server endpoint and (later) the client island, so the
- * two can never disagree about what is valid. MASTER_CONTENT.md §18 defines
- * the fields (Name, Email, Message) and the required states.
+ * Imported by BOTH the server endpoint and the client island, so the two can
+ * never disagree about field limits, the honeypot name, or the response
+ * shape. MASTER_CONTENT.md §18 defines the fields (Name, Email, Message) and
+ * the required states.
+ *
+ * This module deliberately has NO dependency on zod. The Zod schemas
+ * (`contactFormSchema`, `submissionMetaSchema`) live in
+ * `src/lib/contactValidation.ts`, a server-only module, instead of here.
+ *
+ * That split exists because of how bundlers tree-shake ES modules: a `z
+ * .object(...)` call is a function call with side effects Rollup cannot prove
+ * are safe to discard, so importing even one zod-free constant from a module
+ * that ALSO builds a zod schema at its top level pulls the whole schema (and
+ * therefore zod itself) into whatever bundle does the importing. Measured
+ * concretely during Phase 4: before this split, importing only
+ * `HONEYPOT_FIELD` into the client contact island added an 89 KB chunk built
+ * almost entirely from zod internals (`ZodError`, `ZodObject`, `ZodString`)
+ * that the island never calls. `ContactForm.tsx` must only ever import from
+ * *this* file, never from `contactValidation.ts`.
  *
  * Bot detection is deliberately separated from field validation:
  *   - A validation failure is a human mistake and gets specific field errors.
  *   - A bot signal is answered with a normal success response so the caller
  *     learns nothing about the heuristic (see the endpoint).
  */
-
-import { z } from 'zod';
 
 /**
  * Honeypot input name. Rendered visually hidden and off the tab order.
@@ -34,41 +48,19 @@ export const LIMITS = {
   messageMax: 5_000,
 } as const;
 
-/** The three real fields. */
-export const contactFormSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(LIMITS.nameMin, 'Please enter your name.')
-    .max(LIMITS.nameMax, `Name must be ${LIMITS.nameMax} characters or fewer.`),
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .max(LIMITS.emailMax, 'That email address is too long.')
-    .pipe(z.email('Please enter a valid email address.')),
-  message: z
-    .string()
-    .trim()
-    .min(LIMITS.messageMin, `Please write at least ${LIMITS.messageMin} characters.`)
-    .max(LIMITS.messageMax, `Message must be ${LIMITS.messageMax} characters or fewer.`),
-});
-
-export type ContactFormValues = z.infer<typeof contactFormSchema>;
-
 /**
- * Anti-automation metadata submitted alongside the real fields.
- * Both are optional: a missing value is treated as "no signal", never as a
- * failure, so a legitimate submission is never silently dropped.
+ * Shape of the anti-automation metadata `detectBot` reads.
+ *
+ * Written by hand rather than derived via `z.infer` so this file stays
+ * zod-free (see the module comment). `contactValidation.ts`'s
+ * `submissionMetaSchema` produces values that structurally satisfy this type;
+ * TypeScript checks that at the one call site in the API route.
  */
-export const submissionMetaSchema = z.object({
-  [HONEYPOT_FIELD]: z.string().optional(),
-  startedAt: z.coerce.number().int().nonnegative().optional(),
-});
+export type SubmissionMeta = { [K in typeof HONEYPOT_FIELD]?: string } & {
+  startedAt?: number;
+};
 
-export type SubmissionMeta = z.infer<typeof submissionMetaSchema>;
-
-export type BotReason = 'honeypot' | 'too-fast' | 'stale';
+export type BotReason = 'honeypot' | 'too-fast' | 'stale' | 'invalid-timing';
 
 export interface BotVerdict {
   isBot: boolean;
@@ -86,7 +78,13 @@ export function detectBot(meta: SubmissionMeta, now: number = Date.now()): BotVe
     return { isBot: true, reason: 'honeypot' };
   }
 
-  if (typeof meta.startedAt === 'number') {
+  if (meta.startedAt !== undefined) {
+    // A present value that failed to coerce to a real number (see
+    // contactValidation.ts) is itself a forgery signal, not an absence of one.
+    if (!Number.isFinite(meta.startedAt) || meta.startedAt < 0) {
+      return { isBot: true, reason: 'invalid-timing' };
+    }
+
     const elapsed = now - meta.startedAt;
     // Negative elapsed means a future timestamp: treat as forged.
     if (elapsed < MIN_FILL_MS) return { isBot: true, reason: 'too-fast' };
@@ -96,21 +94,7 @@ export function detectBot(meta: SubmissionMeta, now: number = Date.now()): BotVe
   return { isBot: false };
 }
 
-/**
- * Flatten a ZodError into `{ field: firstMessage }` for accessible,
- * per-field error rendering (DESIGN_SYSTEM.md §48).
- */
-export function formatFieldErrors(error: z.ZodError): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const issue of error.issues) {
-    const key = issue.path[0];
-    if (typeof key !== 'string') continue;
-    if (result[key] === undefined) result[key] = issue.message;
-  }
-  return result;
-}
-
-/** Discriminated response contract shared by the endpoint and the future UI. */
+/** Discriminated response contract shared by the endpoint and the UI. */
 export type ContactResponse =
   | { ok: true }
   | { ok: false; error: 'validation'; fieldErrors: Record<string, string> }

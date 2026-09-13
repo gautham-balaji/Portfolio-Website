@@ -15,6 +15,16 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
 
+  // Phase 4 added the first suite that intercepts network requests with
+  // page.route() and asserts on the resulting state change. All of the
+  // servers involved are local and mocked responses are instant, but every
+  // one of these many parallel Chromium instances shares a single `astro
+  // dev` process and one machine's CPU: under full-suite load the default
+  // 5s can occasionally be too tight for that DOM update to land, which
+  // shows up as an intermittent, environment-dependent failure rather than a
+  // real defect (nothing about the assertion's expected outcome changes).
+  expect: { timeout: 10_000 },
+
   use: {
     baseURL: 'http://localhost:4321',
     trace: 'on-first-retry',

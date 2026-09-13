@@ -5,22 +5,22 @@
  * Left: the CTA, a large email link, and the three destinations.
  * Right: the form.
  *
- * Phase 2 ships the form *shell*: real semantics, real field names matching
- * the Zod schema in src/lib/contact.ts, and a native POST to /api/contact so
- * it genuinely delivers mail without JavaScript. It is not inert
- * (MASTER_CONTENT.md §18).
+ * The form itself is <ContactForm client:visible />, a React island: it is
+ * the ONLY hydrated component on the homepage. Astro server-renders the
+ * island's real, complete <form action="/api/contact" method="post"> into the
+ * static page regardless of whether the visitor's browser ever runs
+ * JavaScript, so the form is never inert (MASTER_CONTENT.md §18) even before
+ * hydration. See the module comment in ContactForm.tsx for the full
+ * progressive-enhancement contract, including why `startedAt` is added by the
+ * island rather than baked into this static page.
  *
- * Two deliberate omissions, both for Phase 6:
- *   - `startedAt` is not rendered. On a prerendered page it would carry the
- *     BUILD timestamp, which would exceed MAX_FORM_AGE_MS and cause every
- *     submission to be silently discarded as stale. The schema treats a
- *     missing value as "no signal", so the honeypot still applies.
- *   - The no-JS response is currently the endpoint's raw JSON. The island and
- *     the inline idle/submitting/success/error states land in Phase 6.
- *
- * Labels sit above their fields and are never replaced by placeholders (§48).
+ * Field/status/error styling lives in src/styles/global.css (.contact-form,
+ * .field, .form-status, etc.) rather than in this file's scoped <style>,
+ * because a .tsx component has no scoped style block of its own and both the
+ * island and (for anyone reading raw HTML with CSS but no JS) this page's own
+ * markup need the same classes.
  */
-import { HONEYPOT_FIELD, LIMITS } from '@/lib/contact';
+import ContactForm from '@/components/home/ContactForm';
 import { CONTACT } from '@/lib/copy';
 import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
 ---
@@ -75,72 +75,7 @@ import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
       </div>
 
       <div class="contact-form-wrap">
-        <form class="contact-form" action="/api/contact" method="post">
-          <p class="label form-key">Send a message</p>
-
-          <div class="field">
-            <label class="field-label" for="contact-name">
-              Name
-            </label>
-            <input
-              class="field-input"
-              type="text"
-              id="contact-name"
-              name="name"
-              autocomplete="name"
-              minlength={LIMITS.nameMin}
-              maxlength={LIMITS.nameMax}
-              required
-            />
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="contact-email">
-              Email
-            </label>
-            <input
-              class="field-input"
-              type="email"
-              id="contact-email"
-              name="email"
-              autocomplete="email"
-              maxlength={LIMITS.emailMax}
-              required
-            />
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="contact-message">
-              Message
-            </label>
-            <textarea
-              class="field-input field-textarea"
-              id="contact-message"
-              name="message"
-              rows="5"
-              minlength={LIMITS.messageMin}
-              maxlength={LIMITS.messageMax}
-              required
-            ></textarea>
-          </div>
-
-          {/* Honeypot. Hidden from sight, from assistive technology, and from
-              the tab order, so only an automated filler will complete it. */}
-          <div class="honeypot" aria-hidden="true">
-            <label for="contact-company">Company</label>
-            <input
-              type="text"
-              id="contact-company"
-              name={HONEYPOT_FIELD}
-              tabindex="-1"
-              autocomplete="off"
-            />
-          </div>
-
-          <button class="btn btn-primary form-submit" type="submit">
-            Send message
-          </button>
-        </form>
+        <ContactForm client:visible />
       </div>
     </div>
   </div>
@@ -232,74 +167,8 @@ import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
     cursor: default;
   }
 
-  /* --- Form --- */
   .contact-form-wrap {
     margin-top: clamp(3rem, 7vw, 0);
-  }
-
-  .contact-form {
-    display: grid;
-    gap: 1.5rem;
-    padding-top: 0.875rem;
-    border-top: var(--border-thin) solid var(--color-graphite-rule);
-  }
-
-  .form-key {
-    color: var(--color-oxide-text);
-  }
-
-  .field {
-    display: grid;
-    gap: 0.5rem;
-  }
-
-  .field-label {
-    font-family: var(--font-mono);
-    font-size: var(--text-meta-sm);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-graphite-text);
-  }
-
-  /* Editorial field: an underline, not a rounded pill (§48). */
-  .field-input {
-    width: 100%;
-    min-height: 44px;
-    padding: 0.625rem 0.125rem;
-    background-color: transparent;
-    border: 0;
-    border-bottom: var(--border-thin) solid var(--color-graphite-rule);
-    border-radius: 0;
-    color: var(--color-ink);
-    transition: border-color 150ms ease;
-  }
-
-  .field-input:hover {
-    border-bottom-color: var(--color-ink);
-  }
-
-  .field-input:focus-visible {
-    border-bottom-color: var(--color-oxide-rule);
-    outline-offset: 4px;
-  }
-
-  .field-textarea {
-    resize: vertical;
-    min-height: 7.5rem;
-    line-height: 1.55;
-  }
-
-  .honeypot {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .form-submit {
-    justify-self: start;
   }
 
   @media (min-width: 1024px) {

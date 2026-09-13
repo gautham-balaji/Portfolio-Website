@@ -431,3 +431,164 @@
     margin-top: 0.75rem;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Contact form.
+
+   Shared between the server-rendered fallback (no JS) and the React island
+   (src/components/home/ContactForm.tsx). Global classes rather than a scoped
+   Astro <style> block or CSS module, because a .tsx component has no scoped
+   style block of its own and the site's existing convention is one global
+   stylesheet of named editorial primitives (see .btn, .label, .plate above).
+   --------------------------------------------------------------------------- */
+@layer components {
+  .contact-form {
+    display: grid;
+    gap: 1.5rem;
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .form-key {
+    color: var(--color-oxide-text);
+  }
+
+  .field {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-graphite-text);
+  }
+
+  /* Editorial field: an underline, not a rounded pill (DESIGN_SYSTEM §48). */
+  .field-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.625rem 0.125rem;
+    background-color: transparent;
+    border: 0;
+    border-bottom: var(--border-thin) solid var(--color-graphite-rule);
+    border-radius: 0;
+    color: var(--color-ink);
+    transition: border-color 150ms ease;
+  }
+
+  .field-input:hover {
+    border-bottom-color: var(--color-ink);
+  }
+
+  .field-input:focus-visible {
+    border-bottom-color: var(--color-oxide-rule);
+    outline-offset: 4px;
+  }
+
+  /* Invalid state is never colour-only: the border changes AND a text message
+     appears beneath the field (.field-error), so the problem is legible
+     without depending on colour perception. */
+  .field-input[aria-invalid='true'] {
+    border-bottom-color: var(--color-oxide-rule);
+    border-bottom-width: 2px;
+  }
+
+  .field-textarea {
+    resize: vertical;
+    min-height: 7.5rem;
+    line-height: 1.55;
+  }
+
+  .field-error {
+    margin: 0;
+    font-size: var(--text-meta);
+    line-height: 1.4;
+    color: var(--color-oxide-text);
+  }
+
+  .field-hint {
+    margin: 0;
+    font-size: var(--text-meta-sm);
+    color: var(--color-graphite-text);
+  }
+
+  .honeypot {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .form-submit {
+    justify-self: start;
+    position: relative;
+  }
+
+  /* A disabled submit is dimmed AND its text changes (see ContactForm.tsx);
+     the visual state is never the only signal that submission is under way. */
+  .form-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Always-mounted live region: aria-live only announces changes to content
+     that is already in the accessibility tree when the change happens, so
+     this element exists (empty) from first paint rather than being
+     conditionally rendered only once there is a message to show. */
+  .form-status {
+    margin: 0;
+    padding-top: 0.875rem;
+    font-size: var(--text-body);
+    line-height: 1.5;
+  }
+
+  .form-status:empty {
+    display: none;
+  }
+
+  .form-status-error {
+    border-top: var(--border-thin) solid var(--color-oxide-rule);
+    color: var(--color-oxide-text);
+  }
+
+  .form-status-success {
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+    color: var(--color-ink);
+  }
+
+  /* Success replaces the field grid entirely: showing a form full of
+     now-meaningless fields next to a "message sent" line reads as unfinished. */
+  .form-success {
+    display: grid;
+    gap: 0.75rem;
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .form-success:focus-visible {
+    outline-offset: 4px;
+  }
+
+  .form-success-heading {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-oxide-text);
+  }
+
+  .form-success-message {
+    font-size: var(--text-body-lg);
+    color: var(--color-ink);
+  }
+
+  .form-retry {
+    justify-self: start;
+    margin-top: 0.5rem;
+  }
+}

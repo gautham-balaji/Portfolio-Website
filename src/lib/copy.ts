@@ -36,7 +36,7 @@ export const ENGINEERING_PROFILE = {
   body: [
     "I'm a software engineer interested in backend systems, AI engineering, and the architecture that connects them.",
     'I like understanding how a system works from the ground up, whether that means tracing an unfamiliar codebase, figuring out the architecture behind a product, or connecting technologies that were never designed to work together.',
-    'AI is one of the most interesting tools available to software engineers right now. It is evolving quickly, and when used correctly, I think it can be one of the best tools for building software. My interest isn’t just in using models, but in understanding how to turn them into reliable systems that can actually do useful work.',
+    "AI is one of the most interesting tools available to software engineers right now. It is evolving quickly, and when used correctly, I think it can be one of the best tools for building software. My interest isn't just in using models, but in understanding how to turn them into reliable systems that can actually do useful work.",
     'A lot of what I build starts the same way: I notice something that could work better. If nothing exists that solves it properly, I start with the underlying idea and build from there.',
     "I'm particularly interested in making those systems faster, more reliable, and better designed, from the AI workflow itself down to the backend, database, networking, and processes underneath it.",
   ],
