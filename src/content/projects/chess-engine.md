@@ -115,6 +115,19 @@ figures:
     caption: >-
       Integrated Gradients saliency over the board, showing which squares moved
       the network's evaluation most.
+  - figure: 4
+    kind: chart
+    span: half
+    ratio: 87 / 61
+    src: ../../assets/projects/chess/training-loss.png
+    alt: >-
+      Line chart of training and validation MSE loss over 50 epochs, both
+      curves descending sharply in the first few epochs and levelling out
+      close together with no divergence.
+    source: Training run, chess-bot repository.
+    caption: >-
+      Training and validation loss (MSE) over 50 epochs. The two curves stay
+      close throughout, with no sign of overfitting.
 ---
 
 ## The problem

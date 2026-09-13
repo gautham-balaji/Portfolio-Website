@@ -6,7 +6,7 @@
  * later phase). MASTER_CONTENT.md §27 lists the required outputs.
  */
 
-import { SITE } from './site';
+import { DEFAULT_OG_IMAGE, SITE } from './site';
 
 export interface SeoInput {
   /** Page-specific title. Omit on the home page to use the site default. */
@@ -14,7 +14,7 @@ export interface SeoInput {
   description: string;
   /** Route path, e.g. `/projects/vera`. Used to build the canonical URL. */
   path: string;
-  /** Absolute or root-relative image path. Omitted entirely if unset. */
+  /** Absolute or root-relative image path. Falls back to the site default. */
   ogImage?: string;
   /** `article` for project pages, `website` elsewhere. */
   ogType?: 'website' | 'article';
@@ -30,8 +30,8 @@ export interface SeoMeta {
   ogDescription: string;
   ogType: 'website' | 'article';
   ogUrl: string;
-  ogImage: string | undefined;
-  twitterCard: 'summary' | 'summary_large_image';
+  ogImage: string;
+  twitterCard: 'summary_large_image';
   robots: string;
 }
 
@@ -56,7 +56,7 @@ export function absoluteUrl(path: string): string {
 export function buildMeta(input: SeoInput): SeoMeta {
   const title = input.title ? `${input.title} | ${SITE.name}` : DEFAULT_TITLE;
   const canonical = absoluteUrl(input.path);
-  const ogImage = input.ogImage ? absoluteUrl(input.ogImage) : undefined;
+  const ogImage = absoluteUrl(input.ogImage ?? DEFAULT_OG_IMAGE);
 
   return {
     title,
@@ -67,7 +67,7 @@ export function buildMeta(input: SeoInput): SeoMeta {
     ogType: input.ogType ?? 'website',
     ogUrl: canonical,
     ogImage,
-    twitterCard: ogImage ? 'summary_large_image' : 'summary',
+    twitterCard: 'summary_large_image',
     robots: input.noindex ? 'noindex, nofollow' : 'index, follow',
   };
 }

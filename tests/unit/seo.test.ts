@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { absoluteUrl, buildMeta } from '@/lib/seo';
 import { buildPersonSchema, serialiseSchema } from '@/lib/schema';
-import { SITE } from '@/lib/site';
+import { DEFAULT_OG_IMAGE, SITE } from '@/lib/site';
 
 describe('absoluteUrl', () => {
   it('joins a root-relative path to the site origin', () => {
@@ -45,11 +45,12 @@ describe('buildMeta', () => {
     expect(meta.ogUrl).toBe(meta.canonical);
   });
 
-  it('omits the image entirely when none is supplied', () => {
+  it('falls back to the site default image when a page supplies none', () => {
+    // Every page must emit a real preview image (Phase 5): a page that forgets
+    // to pass `ogImage` must never fall back to no image at all.
     const meta = buildMeta({ description: 'd', path: '/' });
-    expect(meta.ogImage).toBeUndefined();
-    // Without an image, a large summary card would render blank.
-    expect(meta.twitterCard).toBe('summary');
+    expect(meta.ogImage).toBe(`${SITE.url}${DEFAULT_OG_IMAGE}`);
+    expect(meta.twitterCard).toBe('summary_large_image');
   });
 
   it('absolutises a supplied image and upgrades the card type', () => {

@@ -40,7 +40,7 @@ I build software across backend systems, AI, agentic workflows, and the infrastr
 ## Public profiles
 
 - GitHub: https://github.com/gautham-balaji
-- LinkedIn: https://www.linkedin.com/in/gautham-balaji-18722228
+- LinkedIn: https://www.linkedin.com/in/gautham-balaji-18722228b
 
 Only GitHub and LinkedIn are confirmed social profiles.
 

@@ -140,6 +140,42 @@ for (const project of PROJECTS) {
   });
 }
 
+const ARCHITECTURE_DIAGRAMS: {
+  slug: string;
+  minStages: number;
+  hasLoopBack?: boolean;
+}[] = [
+  { slug: 'chess-engine', minStages: 4 },
+  { slug: 'legal-nlp', minStages: 5 },
+  { slug: 'vera', minStages: 7 },
+  { slug: 'geocounterfactual', minStages: 6, hasLoopBack: true },
+];
+
+for (const project of ARCHITECTURE_DIAGRAMS) {
+  test(`${project.slug} architecture diagram has an accessible name and a text equivalent`, async ({
+    page,
+  }) => {
+    // Phase 5: real architecture diagrams built from verified flow/decision
+    // data. The shapes must never be the only way to read the diagram.
+    await page.goto(`/projects/${project.slug}`);
+
+    const svg = page.locator('svg.arch-svg');
+    await expect(svg).toHaveCount(1);
+    await expect(svg).toHaveAttribute('role', 'img');
+
+    const ariaLabel = await svg.getAttribute('aria-label');
+    expect(ariaLabel?.length ?? 0).toBeGreaterThan(20);
+
+    const textEquivalent = page.locator('.dg-sr li');
+    expect(await textEquivalent.count()).toBeGreaterThanOrEqual(project.minStages);
+
+    if (project.hasLoopBack) {
+      expect(ariaLabel).toMatch(/routing back/i);
+      await expect(page.getByText(/on rejection, returns to stage/i)).toHaveCount(1);
+    }
+  });
+}
+
 test('the chess page never presents 0.506 as an accuracy figure', async ({ page }) => {
   // MASTER_CONTENT §23 is explicit: "Do not call this 50.6% accuracy."
   await page.goto('/projects/chess-engine');
@@ -148,6 +184,25 @@ test('the chess page never presents 0.506 as an accuracy figure', async ({ page 
   expect(body).not.toMatch(/50\.6\s*%/);
   expect(body).toContain('0.506');
   expect(body).toContain('Pearson');
+});
+
+test('the chess training-loss chart is a real, resolvable image with descriptive alt text', async ({
+  page,
+}) => {
+  // The one real, verified asset integrated in Phase 5 (a cropped training
+  // run chart from the chess-bot repository, not a placeholder).
+  await page.goto('/projects/chess-engine');
+
+  const img = page.locator('figure img[src*="training-loss"]');
+  await expect(img).toHaveCount(1);
+
+  const alt = await img.getAttribute('alt');
+  expect(alt?.length ?? 0).toBeGreaterThan(20);
+  expect(alt).not.toMatch(/^figure \d+ placeholder/i);
+
+  const src = await img.getAttribute('src');
+  const response = await page.request.get(src!);
+  expect(response.status()).toBe(200);
 });
 
 test('every project is reachable from the homepage index', async ({ page }) => {

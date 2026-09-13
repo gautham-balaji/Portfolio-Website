@@ -87,6 +87,35 @@ test('no third-party requests are made', async ({ page }) => {
   expect(external).toEqual([]);
 });
 
+test('declares a favicon and a real, absolute OG image', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute(
+    'href',
+    '/favicon/icon.svg',
+  );
+  await expect(page.locator('link[rel="icon"][type="image/x-icon"]')).toHaveAttribute(
+    'href',
+    '/favicon/favicon.ico',
+  );
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
+    'href',
+    '/favicon/apple-touch-icon.png',
+  );
+
+  for (const href of [
+    '/favicon/icon.svg',
+    '/favicon/favicon.ico',
+    '/favicon/apple-touch-icon.png',
+  ]) {
+    const response = await page.request.get(href);
+    expect(response.status()).toBe(200);
+  }
+
+  const ogImage = await page.locator('meta[property="og:image"]').getAttribute('content');
+  expect(ogImage).toMatch(/^https?:\/\/.+\/images\/og-default\.png$/);
+});
+
 test('emits canonical, description and Person structured data', async ({ page }) => {
   await page.goto('/');
 

@@ -176,7 +176,6 @@ const education = defineCollection({
     startYear: z.number().int().optional(),
     /** Expected graduation year. */
     endYear: z.number().int(),
-    cgpa: z.number().optional(),
   }),
 });
 

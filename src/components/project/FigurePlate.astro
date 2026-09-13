@@ -64,13 +64,22 @@ const KIND_LABEL: Record<string, string> = {
 
 const kindLabel = KIND_LABEL[kind] ?? 'Figure';
 
+/* Charts and diagrams carry precise content right to the edge (axis labels,
+   node text): cropping them with `cover` can cut that content off. Screenshots
+   and satellite imagery tolerate a cover crop without losing meaning. */
+const fitContain = kind === 'chart' || kind === 'diagram';
+
 /* The plate is decorative-with-meaning: it carries no information the caption
    does not already state, so it is announced once rather than twice. */
 const plateLabel = `Figure ${number} placeholder. ${kindLabel}: ${caption} Not yet captured.`;
 ---
 
 <figure class:list={['figure', `span-${span}`]}>
-  {src && alt ? (
+  {Astro.slots.has('default') ? (
+    <div class="frame frame-custom" style={`aspect-ratio: ${ratio};`}>
+      <slot />
+    </div>
+  ) : src && alt ? (
     <div class="frame" style={`aspect-ratio: ${ratio};`}>
       <Image
         src={src}
@@ -79,7 +88,7 @@ const plateLabel = `Figure ${number} placeholder. ${kindLabel}: ${caption} Not y
         sizes={sizes}
         loading={eager ? 'eager' : 'lazy'}
         fetchpriority={eager ? 'high' : 'auto'}
-        class="frame-image"
+        class:list={['frame-image', { 'is-contain': fitContain }]}
       />
     </div>
   ) : (
@@ -117,6 +126,18 @@ const plateLabel = `Figure ${number} placeholder. ${kindLabel}: ${caption} Not y
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .frame-image.is-contain {
+    object-fit: contain;
+  }
+
+  .frame-custom {
+    padding: clamp(0.75rem, 3vw, 1.5rem);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .plate-caption {

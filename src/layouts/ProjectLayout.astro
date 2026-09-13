@@ -22,8 +22,10 @@ import ProjectHero from '@/components/project/ProjectHero.astro';
 import ProjectNav from '@/components/project/ProjectNav.astro';
 import FigurePlate from '@/components/project/FigurePlate.astro';
 import FlowDiagram from '@/components/project/FlowDiagram.astro';
+import ArchitectureDiagram from '@/components/project/ArchitectureDiagram.astro';
 import MetricList from '@/components/project/MetricList.astro';
 import DecisionList from '@/components/project/DecisionList.astro';
+import { ARCHITECTURE_DIAGRAMS } from '@/lib/architectureDiagrams';
 
 interface Props {
   project: CollectionEntry<'projects'>;
@@ -38,6 +40,13 @@ const d = project.data;
 const [heroFigure, ...restFigures] = d.figures;
 
 const description = d.overview ?? d.descriptor;
+
+const diagramsForProject = ARCHITECTURE_DIAGRAMS[project.id];
+function diagramFor(figureNumber: number) {
+  return diagramsForProject?.[figureNumber];
+}
+
+const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
 ---
 
 <BaseLayout
@@ -51,7 +60,24 @@ const description = d.overview ?? d.descriptor;
   <article class="project">
     <ProjectHero project={project} />
 
-    {heroFigure && (
+    {heroFigure && heroDiagram && (
+      <div class="container block block-hero-figure">
+        <FigurePlate
+          figure={heroFigure.figure}
+          caption={heroFigure.caption}
+          kind={heroFigure.kind}
+          span={heroFigure.span}
+          ratio={heroFigure.ratio}
+          source={heroFigure.source}
+          eager
+          sizes="(min-width: 1024px) 80vw, 100vw"
+        >
+          <ArchitectureDiagram stages={heroDiagram.stages} loopBack={heroDiagram.loopBack} />
+        </FigurePlate>
+      </div>
+    )}
+
+    {heroFigure && !heroDiagram && (
       <div class="container block block-hero-figure">
         <FigurePlate
           figure={heroFigure.figure}
@@ -120,25 +146,42 @@ const description = d.overview ?? d.descriptor;
           Visual evidence
         </h2>
         <div class="grid-12 evidence">
-          {restFigures.map((figure) => (
-            <div class:list={['evidence-item', `is-${figure.span}`]}>
-              <FigurePlate
-                figure={figure.figure}
-                caption={figure.caption}
-                kind={figure.kind}
-                span={figure.span}
-                ratio={figure.ratio}
-                src={figure.src}
-                alt={figure.alt}
-                source={figure.source}
-                sizes={
-                  figure.span === 'half'
-                    ? '(min-width: 1024px) 38vw, 100vw'
-                    : '(min-width: 1024px) 76vw, 100vw'
-                }
-              />
-            </div>
-          ))}
+          {restFigures.map((figure) => {
+            const diagram = diagramFor(figure.figure);
+            const sizes =
+              figure.span === 'half'
+                ? '(min-width: 1024px) 38vw, 100vw'
+                : '(min-width: 1024px) 76vw, 100vw';
+            return (
+              <div class:list={['evidence-item', `is-${figure.span}`]}>
+                {diagram ? (
+                  <FigurePlate
+                    figure={figure.figure}
+                    caption={figure.caption}
+                    kind={figure.kind}
+                    span={figure.span}
+                    ratio={figure.ratio}
+                    source={figure.source}
+                    sizes={sizes}
+                  >
+                    <ArchitectureDiagram stages={diagram.stages} loopBack={diagram.loopBack} />
+                  </FigurePlate>
+                ) : (
+                  <FigurePlate
+                    figure={figure.figure}
+                    caption={figure.caption}
+                    kind={figure.kind}
+                    span={figure.span}
+                    ratio={figure.ratio}
+                    src={figure.src}
+                    alt={figure.alt}
+                    source={figure.source}
+                    sizes={sizes}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
     )}

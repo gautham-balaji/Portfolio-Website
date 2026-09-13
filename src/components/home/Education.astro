@@ -18,7 +18,7 @@ if (!entry) {
   throw new Error('Expected at least one education entry.');
 }
 
-const { institution, degree, field, endYear, cgpa } = entry.data;
+const { institution, degree, field, endYear } = entry.data;
 
 /* "Vellore Institute of Technology, Chennai" is the formal name held in the
    content collection. §21 asks for the short form as the display line. */
@@ -40,12 +40,6 @@ const displayName = 'VIT CHENNAI';
         <dt class="label">Expected</dt>
         <dd class="edu-meta-value">{endYear}</dd>
       </div>
-      {cgpa !== undefined && (
-        <div class="edu-meta-item">
-          <dt class="label">CGPA</dt>
-          <dd class="edu-meta-value">{cgpa.toFixed(2)}</dd>
-        </div>
-      )}
     </dl>
   </div>
 </Section>

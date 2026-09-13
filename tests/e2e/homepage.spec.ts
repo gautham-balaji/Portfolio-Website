@@ -98,6 +98,19 @@ test('no project row collides with the metadata rail', async ({ page }) => {
   expect(collisions).toBe(0);
 });
 
+test('education states the expected graduation year and never shows a CGPA', async ({
+  page,
+}) => {
+  // Phase 5 content correction: CGPA is a real MASTER_CONTENT.md fact but is
+  // deliberately not surfaced on the public site.
+  await page.goto('/');
+
+  const education = page.locator('#education');
+  await expect(education.getByText('2027')).toBeVisible();
+  await expect(education.getByText(/cgpa/i)).toHaveCount(0);
+  await expect(education.getByText(/8\.3/)).toHaveCount(0);
+});
+
 test('the contact form posts to the real endpoint with schema field names', async ({
   page,
 }) => {

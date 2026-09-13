@@ -26,15 +26,10 @@ export const SITE = {
   email: 'gautham.balajis@gmail.com',
   github: 'https://github.com/gautham-balaji',
   /**
-   * DISCREPANCY, pending reconciliation.
-   *
-   * MASTER_CONTENT.md §01 gives this URL without a trailing "b". The Phase 2
-   * brief gives it WITH a trailing "b", which also matches the link used on the
-   * previous live site. The brief's value is used here because it is the more
-   * specific and more recent instruction, and it is independently corroborated.
-   *
-   * MASTER_CONTENT.md has deliberately not been edited. Reconcile the spec to
-   * whichever is correct, then delete this note.
+   * Phase 2 flagged a discrepancy: MASTER_CONTENT.md §01 gave this URL without
+   * a trailing "b", while this file used the "b" version corroborated by the
+   * previous live site. Phase 5 reconciled MASTER_CONTENT.md to match this
+   * value, which is the intended, current URL.
    */
   linkedin: 'https://www.linkedin.com/in/gautham-balaji-18722228b',
 } as const;
@@ -55,9 +50,9 @@ export const EDUCATION_INSTITUTION = 'Vellore Institute of Technology, Chennai';
 /**
  * Default social preview image.
  *
- * The asset does not exist yet (REBUILD_PLAN gap #16). The path is declared so
- * page metadata has a stable target; drop the file at this path when it is
- * produced. Until then, link previews fall back to no image rather than a
- * broken one, because `buildMeta` only emits the tag when `ogImage` resolves.
+ * A static 1200x630 PNG built from verified identity facts only (name, title,
+ * positioning statement, location): no project claims, metrics or
+ * screenshots. `buildMeta` falls back to this path whenever a page does not
+ * supply its own `ogImage`, so every page emits a real preview image.
  */
 export const DEFAULT_OG_IMAGE = '/images/og-default.png';
