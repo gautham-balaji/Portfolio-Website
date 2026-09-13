@@ -1,0 +1,164 @@
+---
+/**
+ * System flow diagram.
+ *
+ * Built as a semantic ordered list and styled into a flow, rather than drawn as
+ * an image. That satisfies DESIGN_SYSTEM.md §33: the diagram is never the only
+ * way to read the information, because the underlying markup already reads
+ * correctly in a screen reader, in reading mode, and with CSS unavailable.
+ *
+ * Per §52 the visual language is thin outlines, rectangles, mono labels and
+ * minimal arrowheads. Oxide marks only the decision point, which is the one
+ * transition worth emphasising (the GeoCounterfactual critic, the Legal NLP
+ * rerank, the VERA tool-selection step).
+ */
+interface Step {
+  label: string;
+  detail?: string | undefined;
+  gate?: boolean;
+}
+
+interface Props {
+  label: string;
+  steps: Step[];
+}
+
+const { label, steps } = Astro.props;
+---
+
+<div class="flow">
+  <p class="label flow-label">{label}</p>
+
+  <ol class="flow-steps">
+    {steps.map((step, i) => (
+      <li class:list={['step', step.gate && 'is-gate']}>
+        <span class="label step-index">{String(i + 1).padStart(2, '0')}</span>
+        <span class="step-label">{step.label}</span>
+        {step.detail && <span class="step-detail">{step.detail}</span>}
+      </li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .flow {
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .flow-label {
+    color: var(--color-oxide-text);
+  }
+
+  .flow-steps {
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .step {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 0.875rem;
+    align-items: baseline;
+    padding: 0.75rem 0.875rem;
+    border: var(--border-thin) solid var(--color-graphite-rule);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-paper);
+  }
+
+  /* Connector between nodes. A short vertical rule, not an animated arrow. */
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: calc(-0.75rem - 1px);
+    width: 1px;
+    height: 0.75rem;
+    background-color: var(--color-graphite-rule);
+  }
+
+  .is-gate {
+    border-color: var(--color-oxide-rule);
+  }
+
+  .step-index {
+    grid-row: 1;
+    color: var(--color-graphite-text);
+  }
+
+  .is-gate .step-index {
+    color: var(--color-oxide-text);
+  }
+
+  .step-label {
+    grid-row: 1;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+    /* Wrap at spaces only. break-word splits "INTERVENTION" mid-word, which
+       reads as a rendering fault rather than a line break. */
+    min-width: 0;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+
+  .step-detail {
+    grid-row: 2;
+    grid-column: 2;
+    font-size: var(--text-meta);
+    line-height: 1.5;
+    color: var(--color-graphite-text);
+  }
+
+  /* Horizontal from desktop up only.
+     GeoCounterfactual has seven nodes; at 768px that leaves roughly 110px per
+     node, which is not enough for the mono labels and overflowed the page.
+     auto-fit lets a long flow wrap to a second row instead of overflowing. */
+  @media (min-width: 1024px) {
+    .flow-steps {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0;
+      align-items: stretch;
+    }
+
+    /* Tighter in horizontal mode so the longest node name fits its column
+       on one or two whole-word lines. */
+    .step-label {
+      font-size: var(--text-meta-sm);
+      letter-spacing: 0.04em;
+    }
+
+    .step {
+      padding-inline: 0.75rem;
+    }
+
+    .step {
+      border-right-width: 0;
+    }
+
+    .step:last-child {
+      border-right-width: var(--border-thin);
+    }
+
+    /* Connector becomes the shared vertical division between nodes. */
+    .step:not(:last-child)::after {
+      left: auto;
+      right: 0;
+      bottom: auto;
+      top: 0;
+      width: 1px;
+      height: 100%;
+    }
+
+    .is-gate + .step::after,
+    .is-gate::after {
+      background-color: var(--color-oxide-rule);
+    }
+  }
+</style>

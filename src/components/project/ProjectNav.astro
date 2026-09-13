@@ -1,0 +1,114 @@
+---
+/**
+ * Previous / next project navigation.
+ *
+ * The four projects form a sequence (MASTER_CONTENT.md §07), so the pages wrap
+ * rather than dead-ending: 04 leads back to 01. Plain links, no transitions.
+ */
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  previous: CollectionEntry<'projects'>;
+  next: CollectionEntry<'projects'>;
+}
+
+const { previous, next } = Astro.props;
+
+const entries = [
+  { rel: 'Previous', entry: previous },
+  { rel: 'Next', entry: next },
+];
+---
+
+<nav class="project-nav" aria-label="Project navigation">
+  <hr class="rule rule-ink" />
+
+  <ul class="nav-list">
+    {entries.map(({ rel, entry }) => (
+      <li class="nav-item">
+        <a href={`/projects/${entry.id}`} class="nav-link">
+          <span class="label nav-rel">{rel}</span>
+          <span class="label nav-number">{String(entry.data.order).padStart(2, '0')}</span>
+          <span class="display nav-title">{entry.data.title}</span>
+          <span class="nav-positioning">{entry.data.positioning}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .project-nav {
+    margin-top: clamp(3rem, 8vw, 6rem);
+  }
+
+  .nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+  }
+
+  .nav-item {
+    border-bottom: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .nav-link {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1rem;
+    padding-block: clamp(1.5rem, 4vw, 2.25rem);
+    text-decoration: none;
+    color: var(--color-ink);
+    transition: background-color 150ms ease;
+  }
+
+  .nav-link:hover {
+    background-color: var(--color-paper-soft);
+  }
+
+  .nav-rel {
+    grid-column: 1 / -1;
+    color: var(--color-oxide-text);
+  }
+
+  .nav-number {
+    grid-column: 1;
+    color: var(--color-graphite-text);
+    padding-top: 0.5em;
+  }
+
+  .nav-title {
+    grid-column: 2;
+    font-size: clamp(1.5rem, 3.6vw, 2.5rem);
+    text-transform: uppercase;
+    overflow-wrap: break-word;
+  }
+
+  .nav-positioning {
+    grid-column: 2;
+    font-size: var(--text-body);
+    line-height: 1.5;
+    color: var(--color-graphite-text);
+    max-width: 44ch;
+  }
+
+  @media (min-width: 768px) {
+    .nav-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--grid-gap);
+    }
+
+    .nav-link {
+      padding-inline: 0;
+    }
+
+    .nav-link:hover {
+      background-color: transparent;
+    }
+
+    .nav-link:hover .nav-title {
+      color: var(--color-oxide-text);
+    }
+  }
+</style>

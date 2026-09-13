@@ -30,7 +30,14 @@ const number = String(order).padStart(2, '0');
     <p class="label row-number">{number}</p>
 
     <div class="row-headline">
-      <h3 class="display row-title">{title}</h3>
+      {/* The title is the link to the case study. A real anchor makes every
+          project keyboard reachable and announceable, which a div with a click
+          handler never was. */}
+      <h3 class="display row-title">
+        <a href={`/projects/${project.id}`} class="row-title-link">
+          {title}
+        </a>
+      </h3>
       <p class="row-positioning">{positioning}</p>
     </div>
 
@@ -43,8 +50,17 @@ const number = String(order).padStart(2, '0');
       <p class="label">ROLE / {role.toUpperCase()}</p>
       <p class="label row-stack">{technologies.slice(0, 4).join(' / ').toUpperCase()}</p>
 
+      <a href={`/projects/${project.id}`} class="row-link">
+        Read case study
+      </a>
+
       {github ? (
-        <a href={github} class="row-link" target="_blank" rel="noopener noreferrer">
+        <a
+          href={github}
+          class="row-link row-link-muted"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           View source
         </a>
       ) : (
@@ -131,8 +147,25 @@ const number = String(order).padStart(2, '0');
     text-decoration-thickness: 2px;
   }
 
+  .row-title-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .row-title-link:hover {
+    color: var(--color-oxide-text);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.12em;
+  }
+
+  .row-link-muted {
+    margin-top: 0;
+    color: var(--color-graphite-text);
+  }
+
   .row-nolink {
-    margin-top: 0.5rem;
+    margin-top: 0;
     font-style: normal;
     color: var(--color-graphite-text);
   }

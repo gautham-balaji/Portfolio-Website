@@ -1,0 +1,428 @@
+---
+/**
+ * Project detail page.
+ *
+ * One shared architecture across all four projects. Sections render only when
+ * the content supports them, so a project with no verified metrics simply has
+ * no measurements block rather than an empty one.
+ *
+ * The narrative body is markdown, rendered into a prose column with a numbered
+ * heading counter. Structured material (flow, decisions, metrics, limitations,
+ * figures) comes from frontmatter, because those are lists the page reasons
+ * about rather than prose.
+ *
+ * Entirely static. No island is hydrated on these routes.
+ */
+import type { CollectionEntry } from 'astro:content';
+import { render } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import SiteNav from '@/components/layout/SiteNav.astro';
+import SiteFooter from '@/components/layout/SiteFooter.astro';
+import ProjectHero from '@/components/project/ProjectHero.astro';
+import ProjectNav from '@/components/project/ProjectNav.astro';
+import FigurePlate from '@/components/project/FigurePlate.astro';
+import FlowDiagram from '@/components/project/FlowDiagram.astro';
+import MetricList from '@/components/project/MetricList.astro';
+import DecisionList from '@/components/project/DecisionList.astro';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  previous: CollectionEntry<'projects'>;
+  next: CollectionEntry<'projects'>;
+}
+
+const { project, previous, next } = Astro.props;
+const { Content } = await render(project);
+
+const d = project.data;
+const [heroFigure, ...restFigures] = d.figures;
+
+const description = d.overview ?? d.descriptor;
+---
+
+<BaseLayout
+  title={d.title}
+  description={description}
+  path={`/projects/${project.id}`}
+  ogType="article"
+>
+  <SiteNav slot="header" />
+
+  <article class="project">
+    <ProjectHero project={project} />
+
+    {heroFigure && (
+      <div class="container block block-hero-figure">
+        <FigurePlate
+          figure={heroFigure.figure}
+          caption={heroFigure.caption}
+          kind={heroFigure.kind}
+          span={heroFigure.span}
+          ratio={heroFigure.ratio}
+          src={heroFigure.src}
+          alt={heroFigure.alt}
+          source={heroFigure.source}
+          eager
+          sizes="(min-width: 1024px) 80vw, 100vw"
+        />
+      </div>
+    )}
+
+    {d.overview && (
+      <div class="container block">
+        <div class="grid-12">
+          <p class="overview">{d.overview}</p>
+        </div>
+      </div>
+    )}
+
+    {d.flow && (
+      <div class="container block">
+        <div class="grid-12">
+          <div class="flow-wrap">
+            <FlowDiagram label={d.flow.label} steps={d.flow.steps} />
+          </div>
+        </div>
+      </div>
+    )}
+
+    <div class="container block">
+      <div class="grid-12">
+        <div class="prose">
+          <Content />
+        </div>
+      </div>
+    </div>
+
+    {d.decisions.length > 0 && (
+      <div class="container block">
+        <div class="grid-12">
+          <div class="decisions-wrap">
+            <DecisionList decisions={d.decisions} />
+          </div>
+        </div>
+      </div>
+    )}
+
+    {d.metrics.length > 0 && (
+      <div class="container block">
+        <div class="grid-12">
+          <div class="metrics-wrap">
+            <MetricList metrics={d.metrics} />
+          </div>
+        </div>
+      </div>
+    )}
+
+    {restFigures.length > 0 && (
+      <section class="container block" aria-labelledby="evidence-heading">
+        <h2 id="evidence-heading" class="label block-heading">
+          Visual evidence
+        </h2>
+        <div class="grid-12 evidence">
+          {restFigures.map((figure) => (
+            <div class:list={['evidence-item', `is-${figure.span}`]}>
+              <FigurePlate
+                figure={figure.figure}
+                caption={figure.caption}
+                kind={figure.kind}
+                span={figure.span}
+                ratio={figure.ratio}
+                src={figure.src}
+                alt={figure.alt}
+                source={figure.source}
+                sizes={
+                  figure.span === 'half'
+                    ? '(min-width: 1024px) 38vw, 100vw'
+                    : '(min-width: 1024px) 76vw, 100vw'
+                }
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {d.limitations.length > 0 && (
+      <section class="container block" aria-labelledby="limitations-heading">
+        <div class="grid-12">
+          <div class="limitations">
+            <h2 id="limitations-heading" class="label limitations-heading">
+              Limitations
+            </h2>
+            <ul class="limitations-list">
+              {d.limitations.map((item) => (
+                <li class="limitation">{item}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <div class="container">
+      <ProjectNav previous={previous} next={next} />
+    </div>
+  </article>
+
+  <SiteFooter slot="footer" />
+</BaseLayout>
+
+<style>
+  .block {
+    margin-top: clamp(3rem, 8vw, 6rem);
+  }
+
+  .block-hero-figure {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .block-heading {
+    color: var(--color-oxide-text);
+    margin-bottom: 1.5rem;
+  }
+
+  /* Lead paragraph. Larger than body, narrower than full width. */
+  .overview {
+    grid-column: 1 / -1;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+    max-width: 40ch;
+  }
+
+  .flow-wrap,
+  .decisions-wrap,
+  .prose,
+  .limitations {
+    grid-column: 1 / -1;
+  }
+
+  .metrics-wrap {
+    grid-column: 1 / -1;
+  }
+
+  /* --- Limitations -------------------------------------------------------
+     Given the same weight as every other section. A project page that states
+     its own weak points is more credible than one that buries them, and
+     MASTER_CONTENT §23 requires these boundaries be present. */
+  .limitations {
+    border-top: var(--border-thin) solid var(--color-ink);
+    padding-top: 0.875rem;
+  }
+
+  .limitations-heading {
+    margin-bottom: 1.25rem;
+  }
+
+  .limitations-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .limitation {
+    position: relative;
+    padding: 0.9375rem 0 0.9375rem 2.25rem;
+    border-top: var(--border-thin) solid var(--color-paper-soft);
+    font-size: var(--text-body);
+    line-height: 1.6;
+    color: var(--color-graphite-text);
+    max-width: 74ch;
+  }
+
+  .limitation:first-child {
+    border-top: 0;
+  }
+
+  .limitation::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1.7em;
+    width: 1.25rem;
+    height: 1px;
+    background-color: var(--color-oxide-rule);
+  }
+
+  /* --- Evidence grid --- */
+  .evidence {
+    row-gap: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .evidence-item {
+    grid-column: 1 / -1;
+  }
+
+  @media (min-width: 768px) {
+    .evidence-item.is-half {
+      grid-column: span 6;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .overview {
+      grid-column: 1 / span 7;
+      max-width: none;
+    }
+
+    /* Full width. A seven-node flow needs the whole grid to sit on one row,
+       and the diagram earns the space. */
+    .flow-wrap {
+      grid-column: 1 / -1;
+    }
+
+    .prose {
+      grid-column: 1 / span 7;
+    }
+
+    .decisions-wrap {
+      grid-column: 1 / span 9;
+    }
+
+    .metrics-wrap {
+      grid-column: 1 / span 6;
+    }
+
+    .limitations {
+      grid-column: 1 / span 8;
+    }
+
+    .evidence-item.is-wide {
+      grid-column: span 9;
+    }
+
+    .evidence-item.is-half {
+      grid-column: span 5;
+    }
+  }
+</style>
+
+<style is:global>
+  /* ---------------------------------------------------------------------------
+     Project prose.
+
+     Styles the rendered markdown body. Headings carry an automatic counter so
+     the narrative reads as numbered sections (DESIGN_SYSTEM §16, §51) without
+     the numbers having to be written into the content.
+     --------------------------------------------------------------------------- */
+  .prose {
+    counter-reset: prose-section;
+  }
+
+  .prose > h2 {
+    counter-increment: prose-section;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .prose > h2::before {
+    content: counter(prose-section, decimal-leading-zero);
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    color: var(--color-oxide-text);
+    margin-bottom: 0.75rem;
+  }
+
+  .prose > h2:first-child {
+    margin-top: 0;
+  }
+
+  .prose > h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+    line-height: 1.25;
+    margin-top: 2rem;
+  }
+
+  .prose > p {
+    margin-top: 1.125rem;
+    font-size: var(--text-body);
+    line-height: 1.7;
+    color: var(--color-graphite-text);
+    /* Kept near 70 characters for comfortable reading. */
+    max-width: 70ch;
+  }
+
+  /* The first paragraph after a section heading carries more weight. */
+  .prose > h2 + p {
+    color: var(--color-ink);
+    font-size: var(--text-body-lg);
+    line-height: 1.6;
+  }
+
+  .prose strong {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    color: var(--color-ink);
+    background-color: var(--color-paper-soft);
+    padding: 0.1em 0.35em;
+    border-radius: var(--radius-sm);
+  }
+
+  .prose > ul,
+  .prose > ol {
+    margin-top: 1.125rem;
+    padding-left: 0;
+    list-style: none;
+    max-width: 70ch;
+  }
+
+  .prose > ul > li,
+  .prose > ol > li {
+    position: relative;
+    padding: 0.5rem 0 0.5rem 2rem;
+    font-size: var(--text-body);
+    line-height: 1.6;
+    color: var(--color-graphite-text);
+  }
+
+  .prose > ul > li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1.3em;
+    width: 1rem;
+    height: 1px;
+    background-color: var(--color-graphite-rule);
+  }
+
+  .prose > ol {
+    counter-reset: prose-item;
+  }
+
+  .prose > ol > li {
+    counter-increment: prose-item;
+  }
+
+  .prose > ol > li::before {
+    content: counter(prose-item, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    letter-spacing: 0.1em;
+    color: var(--color-graphite-text);
+  }
+</style>

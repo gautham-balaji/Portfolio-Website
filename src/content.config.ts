@@ -10,6 +10,7 @@
  */
 
 import { defineCollection } from 'astro:content';
+import type { SchemaContext } from 'astro:content';
 import { file, glob } from 'astro/loaders';
 // Framework boundary: Astro generates collection types with
 // `import('astro/zod').infer<...>`, so content schemas must be built with
@@ -28,67 +29,120 @@ import { z } from 'astro/zod';
 const projectStatus = z.enum(['Completed', 'Built', 'Prototype', 'Active Development']);
 
 /**
- * A figure attached to a project.
+ * A verified measurement.
  *
- * `src` is a repo-relative path under `src/assets/` so Astro's image pipeline
- * processes it. No project has media yet; the array defaults to empty and must
- * never be populated with placeholder or fabricated imagery.
+ * `note` exists to preserve meaning. MASTER_CONTENT.md §23 requires, for
+ * example, that 0.506 is read as a Pearson correlation and never as an
+ * accuracy percentage, so the qualifier travels with the number rather than
+ * being left to the layout.
  */
-const mediaItem = z.object({
-  src: z.string(),
-  /** Describes what the figure demonstrates, not merely what it is. */
-  alt: z.string(),
-  caption: z.string().optional(),
-  /** Figure number shown in the editorial caption, e.g. 1 renders "FIG. 01". */
-  figure: z.number().int().positive().optional(),
+const metric = z.object({
+  label: z.string(),
+  value: z.string(),
+  note: z.string().optional(),
 });
+
+/** One node in a system flow. */
+const flowStep = z.object({
+  label: z.string(),
+  detail: z.string().optional(),
+  /** Marks a decision point, e.g. the GeoCounterfactual critic. */
+  gate: z.boolean().default(false),
+});
+
+/** A named engineering decision and the reasoning behind it. */
+const decision = z.object({
+  title: z.string(),
+  body: z.string(),
+});
+
+export type ProjectFigureKind = 'screenshot' | 'diagram' | 'chart' | 'map';
+
+/**
+ * A figure slot.
+ *
+ * Figures are declared in content even when the asset does not exist yet, so
+ * the page states what evidence belongs where. Without `src` the component
+ * renders an editorial plate; adding `src` and `alt` later fills it in with no
+ * layout change.
+ *
+ * `kind` is rendered as a visible label, so an architecture diagram can never
+ * be mistaken for an application screenshot.
+ */
+const figureSchema = (image: SchemaContext['image']) =>
+  z.object({
+    figure: z.number().int().positive(),
+    caption: z.string(),
+    kind: z.enum(['screenshot', 'diagram', 'chart', 'map']).default('screenshot'),
+    span: z.enum(['full', 'wide', 'half']).default('wide'),
+    ratio: z.string().default('16 / 10'),
+    src: image().optional(),
+    /** Required whenever `src` is present. Describes what the figure shows. */
+    alt: z.string().optional(),
+    /** Optional provenance line, e.g. which run produced the output. */
+    source: z.string().optional(),
+  });
 
 const projects = defineCollection({
   loader: glob({ base: './src/content/projects', pattern: '**/*.md' }),
-  schema: z.object({
-    // --- identity and ordering -------------------------------------------
-    title: z.string(),
-    /** Position in the 01-04 Selected Work sequence (MASTER_CONTENT §07). */
-    order: z.number().int().positive(),
-    featured: z.boolean().default(false),
+  schema: ({ image }) =>
+    z.object({
+      // --- identity and ordering -------------------------------------------
+      title: z.string(),
+      /** Position in the 01-04 Selected Work sequence (MASTER_CONTENT §07). */
+      order: z.number().int().positive(),
+      featured: z.boolean().default(false),
 
-    // --- locked metadata --------------------------------------------------
-    status: projectStatus,
-    year: z.number().int().min(2000).max(2100),
-    role: z.string(),
+      // --- locked metadata --------------------------------------------------
+      status: projectStatus,
+      year: z.number().int().min(2000).max(2100),
+      role: z.string(),
 
-    // --- homepage copy ----------------------------------------------------
-    /** Short bold line, e.g. "Teaching a chess engine to explain itself." */
-    positioning: z.string(),
-    /** One-sentence descriptor used in the project index. */
-    descriptor: z.string(),
-    technologies: z.array(z.string()).min(1),
+      // --- homepage copy ----------------------------------------------------
+      /** Short bold line, e.g. "Teaching a chess engine to explain itself." */
+      positioning: z.string(),
+      /** One-sentence descriptor used in the project index. */
+      descriptor: z.string(),
+      technologies: z.array(z.string()).min(1),
 
-    // --- detail-page narrative (Phase 4; optional until written) ----------
-    thesis: z.string().optional(),
-    problem: z.string().optional(),
-    approach: z.string().optional(),
-    architecture: z.string().optional(),
-    technicalDecisions: z.array(z.string()).optional(),
-    results: z.array(z.string()).optional(),
-    /**
-     * Stated limitations. Optional only because not every project page is
-     * written yet. Where MASTER_CONTENT.md §23 defines a boundary, it must be
-     * present before that project page ships.
-     */
-    limitations: z.array(z.string()).optional(),
-    lessons: z.array(z.string()).optional(),
-    futureWork: z.array(z.string()).optional(),
+      // --- detail page ------------------------------------------------------
+      /** Short lead paragraph under the project hero. */
+      overview: z.string().optional(),
+      thesis: z.string().optional(),
 
-    // --- links ------------------------------------------------------------
-    // Optional by design: Legal NLP and VERA have no public link, and
-    // MASTER_CONTENT.md §10 and §23 forbid inventing one.
-    github: z.url().optional(),
-    live: z.url().optional(),
+      /**
+       * The system flow, rendered as both a diagram and an ordered list so the
+       * diagram is never the only way to read it (DESIGN_SYSTEM §33).
+       */
+      flow: z
+        .object({
+          label: z.string(),
+          steps: z.array(flowStep).min(2),
+        })
+        .optional(),
 
-    // --- media ------------------------------------------------------------
-    media: z.array(mediaItem).default([]),
-  }),
+      /** Named engineering decisions, the most interesting part of each story. */
+      decisions: z.array(decision).default([]),
+
+      /** Verified measurements only. Every value carries its own qualifier. */
+      metrics: z.array(metric).default([]),
+
+      /**
+       * Stated limitations. Required in practice for every project page:
+       * MASTER_CONTENT.md §23 defines a boundary for all four projects, and
+       * stating it is what makes the rest credible.
+       */
+      limitations: z.array(z.string()).default([]),
+
+      // --- links ------------------------------------------------------------
+      // Optional by design: Legal NLP and VERA have no public link, and
+      // MASTER_CONTENT.md §10 and §23 forbid inventing one.
+      github: z.url().optional(),
+      live: z.url().optional(),
+
+      // --- figures ----------------------------------------------------------
+      figures: z.array(figureSchema(image)).default([]),
+    }),
 });
 
 const experience = defineCollection({
