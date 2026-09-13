@@ -23,7 +23,7 @@ const { title, order, status, year, role, positioning, descriptor, technologies,
 const number = String(order).padStart(2, '0');
 ---
 
-<article class="row">
+<article class="row" data-reveal>
   <hr class="rule" />
 
   <div class="grid-12 row-grid">
@@ -71,6 +71,46 @@ const number = String(order).padStart(2, '0');
 </article>
 
 <style>
+  /* --- Engaged row -------------------------------------------------------
+     Hover or keyboard focus anywhere in the row emphasises the whole entry:
+     the rule takes Oxide, the number and title step right, and the metadata
+     rail darkens from Graphite to Ink.
+
+     Every one of those is emphasis on information that is already present and
+     already legible. Nothing here is disclosure: §25 and §40 both require the
+     row to be fully understandable without hovering it, which is also why the
+     keyboard gets the identical treatment through :focus-within rather than a
+     reduced version of it. */
+  .row .rule {
+    transition: border-top-color var(--motion-base) var(--ease-standard);
+  }
+
+  .row:hover .rule,
+  .row:focus-within .rule {
+    border-top-color: var(--color-oxide-rule);
+  }
+
+  .row-number,
+  .row-headline {
+    transition: translate var(--motion-base) var(--ease-standard);
+  }
+
+  .row:hover .row-number,
+  .row:focus-within .row-number,
+  .row:hover .row-headline,
+  .row:focus-within .row-headline {
+    translate: 0.25rem 0;
+  }
+
+  .row-meta .label {
+    transition: color var(--motion-base) var(--ease-standard);
+  }
+
+  .row:hover .row-meta .label,
+  .row:focus-within .row-meta .label {
+    color: var(--color-ink);
+  }
+
   .row-grid {
     padding-block: clamp(1.75rem, 4vw, 3rem);
     align-items: start;
@@ -138,8 +178,8 @@ const number = String(order).padStart(2, '0');
     text-decoration-color: var(--color-graphite-rule);
     text-underline-offset: 0.3em;
     transition:
-      text-decoration-color 150ms ease,
-      text-decoration-thickness 150ms ease;
+      text-decoration-color var(--motion-fast) var(--ease-standard),
+      text-decoration-thickness var(--motion-fast) var(--ease-standard);
   }
 
   .row-link:hover {

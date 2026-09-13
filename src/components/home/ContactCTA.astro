@@ -30,7 +30,7 @@ import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
     <hr class="rule rule-ink" />
 
     <div class="grid-12 contact-grid">
-      <div class="contact-lead">
+      <div class="contact-lead" data-reveal>
         <h2 id="contact-heading" class="display contact-heading">
           {CONTACT.heading}
         </h2>
@@ -123,7 +123,7 @@ import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
     text-decoration-thickness: 1px;
     text-underline-offset: 0.22em;
     word-break: break-word;
-    transition: text-decoration-thickness 150ms ease;
+    transition: text-decoration-thickness var(--motion-fast) var(--ease-standard);
   }
 
   .contact-email:hover {
@@ -152,8 +152,8 @@ import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
     text-decoration-color: var(--color-graphite-rule);
     text-underline-offset: 0.3em;
     transition:
-      text-decoration-color 150ms ease,
-      text-decoration-thickness 150ms ease;
+      text-decoration-color var(--motion-fast) var(--ease-standard),
+      text-decoration-thickness var(--motion-fast) var(--ease-standard);
   }
 
   .contact-link:hover {

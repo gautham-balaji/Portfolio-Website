@@ -33,10 +33,14 @@ const { id, number, label, compact = false, ariaLabel } = Astro.props;
         <span aria-hidden="true" class="section-slash">
           /
         </span>
-        {label}
+        {/* The section name resolves out of scrambled glyphs the first time
+            it is scrolled to (DESIGN_SYSTEM §26). The number is deliberately
+            left alone: it is the reader's position in the sequence, so it
+            should be legible the instant it appears. */}
+        <span data-decrypt>{label}</span>
       </p>
     </div>
-    <hr class="rule rule-ink" />
+    <hr class="rule rule-ink" data-reveal="rule" />
 
     <div class="section-body">
       <slot />

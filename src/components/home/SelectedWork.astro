@@ -36,7 +36,7 @@ const earliestYear = Math.min(...projects.map((p) => p.data.year));
 ---
 
 <Section id="work" number="01" label="Selected Work">
-  <div class="intro">
+  <div class="intro" data-reveal>
     <h2 class="display intro-heading">THINGS I'VE BUILT.</h2>
     <p class="intro-note label">
       {projects.length} PROJECTS / {earliestYear} &ndash; PRESENT
@@ -45,7 +45,7 @@ const earliestYear = Math.min(...projects.map((p) => p.data.year));
 
   {/* ---------- Flagship ---------- */}
   <article class="flagship" aria-labelledby="flagship-title">
-    <div class="grid-12 flagship-head">
+    <div class="grid-12 flagship-head" data-reveal>
       <p class="flagship-number display">01</p>
 
       <div class="flagship-headline">
@@ -58,7 +58,7 @@ const earliestYear = Math.min(...projects.map((p) => p.data.year));
       </div>
     </div>
 
-    <div class="grid-12 flagship-body">
+    <div class="grid-12 flagship-body" data-reveal>
       <div class="flagship-media">
         <FigurePlate
           figure="01"
@@ -111,7 +111,10 @@ const earliestYear = Math.min(...projects.map((p) => p.data.year));
   </article>
 
   {/* ---------- Index rows ---------- */}
-  <div class="rows">
+  {/* `data-project-index` scopes the global index-focus styles below to this
+      container. Experience.astro renders its own `.rows` / `.row` pair, and a
+      bare class selector in a global block would reach it too. */}
+  <div class="rows" data-project-index>
     {rest.map((project) => (
       <ProjectRow project={project} />
     ))}
@@ -261,5 +264,39 @@ const earliestYear = Math.min(...projects.map((p) => p.data.year));
       grid-template-columns: 1fr;
       gap: 1.125rem;
     }
+  }
+</style>
+
+<style is:global>
+  /* --- Index focus -------------------------------------------------------
+     When one row is engaged, the rest of the index steps back. This is the
+     second of the two interactive effects the phase budget allows, and it
+     costs no JavaScript at all: `:has()` lets the container react to its own
+     children, which means pointer and keyboard behave identically and there
+     is nothing to hydrate.
+
+     Global rather than scoped because the container (.rows) is rendered here
+     and the rows themselves are rendered by ProjectRow.astro, so Astro's
+     per-component scoping would stop the selector matching across the
+     boundary. Same precedent as the prose styles in ProjectLayout.astro.
+
+     Receding is emphasis, never information: the row keeps its full contrast
+     the moment the pointer leaves, nothing is hidden, and the engaged row is
+     marked by rule colour and position as well as by contrast, so opacity is
+     never carrying a meaning on its own (§25). Browsers without :has() drop
+     the rule and simply show a static index.
+
+     The rows recede with `filter` rather than `opacity` because opacity on a
+     row belongs to the reveal system, which fades it in over a much longer
+     duration. Two properties, two owners, no shorthand fighting. The
+     :not(.js-reveal) rule covers the case where reveals are off entirely and
+     nothing else has declared a transition for these rows. */
+  html:not(.js-reveal) [data-project-index] .row {
+    transition: filter var(--motion-base) var(--ease-standard);
+  }
+
+  [data-project-index]:has(.row:hover) .row:not(:hover),
+  [data-project-index]:has(.row:focus-within) .row:not(:focus-within) {
+    filter: opacity(0.62);
   }
 </style>

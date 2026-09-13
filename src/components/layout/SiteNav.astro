@@ -88,6 +88,7 @@ import { SITE } from '@/lib/site';
   }
 
   .nav-link {
+    position: relative;
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -99,15 +100,34 @@ import { SITE } from '@/lib/site';
     text-transform: uppercase;
     text-decoration: none;
     color: var(--color-graphite-text);
-    border-bottom: 1px solid transparent;
-    transition:
-      color 150ms ease,
-      border-color 150ms ease;
+    transition: color var(--motion-fast) var(--ease-standard);
   }
 
-  .nav-link:hover {
+  /* The rule is drawn rather than switched on: it grows from the leading
+     edge of the word, which is the same gesture the section rules use.
+     Colour still changes alongside it, so the state never depends on
+     noticing a one-pixel line. */
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 6px;
+    height: 1px;
+    background-color: var(--color-oxide-rule);
+    scale: 0 1;
+    transform-origin: left center;
+    transition: scale var(--motion-base) var(--ease-standard);
+  }
+
+  .nav-link:hover,
+  .nav-link:focus-visible {
     color: var(--color-ink);
-    border-bottom-color: var(--color-oxide-rule);
+  }
+
+  .nav-link:hover::after,
+  .nav-link:focus-visible::after {
+    scale: 1 1;
   }
 
   /* --- Mobile disclosure --- */

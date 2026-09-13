@@ -25,6 +25,20 @@ export default defineConfig({
   // real defect (nothing about the assertion's expected outcome changes).
   expect: { timeout: 10_000 },
 
+  // Capped deliberately, and measured rather than guessed.
+  //
+  // Playwright's default is half the available cores, which on a 12-core
+  // machine is six workers. All six drive one `astro dev` process, and by
+  // Phase 6 the suite was large enough that the contention was starving the
+  // contact form island: hydration would occasionally take ~2.3s instead of
+  // ~1.3s, and the tests that click into a freshly hydrated form failed.
+  // Running the identical suite at three workers took it from five or six
+  // intermittent failures to the one that also fails on a clean tree.
+  //
+  // No test is skipped, relaxed or retried to achieve that. This only stops
+  // the harness competing with itself for the CPU it is measuring.
+  workers: process.env.CI ? 2 : 3,
+
   use: {
     baseURL: 'http://localhost:4321',
     trace: 'on-first-retry',

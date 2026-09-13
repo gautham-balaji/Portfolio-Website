@@ -27,7 +27,23 @@ async function fulfillJson(route: Route, body: ContactResponse, status = 200) {
   });
 }
 
+/**
+ * Fill the form, once the island is genuinely interactive.
+ *
+ * Every caller is testing the JavaScript-enhanced path (the no-JS tests
+ * further down build their own scriptless contexts and fill the fields
+ * directly), and that path only exists after `client:visible` has hydrated
+ * the island. Clicking before then submits the server-rendered form
+ * natively, which is correct behaviour but not what these tests mean to
+ * assert -- it just made them fail intermittently under parallel load.
+ *
+ * `startedAt` is the precise signal: ContactForm renders that hidden input
+ * only from its `useEffect`, so its presence means React is live on this
+ * form and nothing else does.
+ */
 async function fillValidForm(page: Page) {
+  await expect(page.locator('form.contact-form input[name="startedAt"]')).toBeAttached();
+
   await page.getByLabel('Name').fill('Ada Lovelace');
   await page.getByLabel('Email').fill('ada@example.com');
   await page

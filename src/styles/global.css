@@ -75,6 +75,27 @@
   --border-thin: 1px;
   --radius-sm: 2px;
   --radius-md: 8px;
+
+  /* --- Motion (DESIGN_SYSTEM §27, §34) ----------------------------------
+     Four durations, two easings. Components pick from these rather than
+     inventing values, so every transition on the site belongs to the same
+     system.
+
+       fast       pointer feedback: hover, press, focus
+       base       state changes that the reader is watching happen
+       reveal     one element entering the viewport
+       editorial  the hero's opening sequence, the slowest thing here
+
+     `standard` is decisive: it leaves immediately and decelerates into
+     place, which reads as controlled rather than floaty. `entrance` is a
+     longer tail for reveals. Neither overshoots: nothing on this site
+     bounces. */
+  --motion-fast: 120ms;
+  --motion-base: 220ms;
+  --motion-reveal: 560ms;
+  --motion-editorial: 620ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Mobile type scale (DESIGN_SYSTEM §05). Display sizes change; body does not.
@@ -207,11 +228,25 @@
     text-transform: uppercase;
     padding: 0.75rem 1rem;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    transition: transform 150ms ease;
+    transition: transform var(--motion-base) var(--ease-standard);
   }
 
   .skip-link:focus-visible {
     transform: translateY(0);
+  }
+
+  /* Available to assistive technology, absent from the visual design.
+     Used where a decorative treatment temporarily replaces real text. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
 }
 
@@ -234,6 +269,123 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* Reveals are an enhancement, not a layout: if a reader has asked for
+     less motion, every element is simply at its final state from the
+     start. The entrance script also declines to run, so this is a second
+     guard rather than the only one. */
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Scroll reveal.
+
+   The hidden state is scoped to `html.js-reveal`, a class set by a small
+   synchronous script in the document head. That ordering matters: if the
+   hidden state lived on `[data-reveal]` unconditionally, a reader with
+   JavaScript disabled would get a page of invisible content, and a deferred
+   script would flash the content in before hiding it.
+
+   So: no JavaScript, no class, no hidden state, and the page reads exactly as
+   it does today. The same is true if the reveal script fails to load, because
+   it removes the class itself as a failsafe.
+   --------------------------------------------------------------------------- */
+.js-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  /* `filter` rides along because a reveal target may also be a hover target
+     (the project index rows are both). A component cannot add its own
+     `transition` shorthand for that without clobbering this one at equal
+     specificity, so the reveal system declares every property a reveal
+     target is allowed to animate, and components set values only. */
+  transition:
+    opacity var(--motion-reveal) var(--ease-entrance),
+    transform var(--motion-reveal) var(--ease-entrance),
+    filter var(--motion-base) var(--ease-standard);
+  /* Stagger, in units of one step. Set per element where a group should
+     arrive in sequence rather than together. */
+  transition-delay: calc(var(--reveal-index, 0) * 70ms);
+}
+
+.js-reveal [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Entrance.
+
+   Used by the two page openers (the homepage hero and the project hero),
+   which are above the fold and should not wait for a deferred module to
+   notice them. Pure CSS keyframes with `animation-fill-mode: both`, so this
+   runs with JavaScript disabled and collapses to nothing under reduced
+   motion via the block above.
+
+   Steps are 60ms apart and follow reading order, so the whole sequence is
+   finished inside a second and overlaps as little as possible with the work
+   the browser is doing to make the page interactive. Movement is 10px and
+   opacity; nothing scales or blurs, no step is unreadable, there is no
+   loader, and the page is interactive from the first paint -- a click that
+   lands at 200ms works normally.
+   --------------------------------------------------------------------------- */
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.enter {
+  animation: enter-rise var(--motion-editorial) var(--ease-entrance) both;
+  animation-delay: calc(var(--enter-index, 0) * 60ms);
+}
+
+/* A rule draws itself from the leading edge rather than fading in: the
+   gesture is the rule being ruled. */
+.js-reveal [data-reveal='rule'] {
+  transform: none;
+  transform-origin: left center;
+  scale: 0 1;
+  transition:
+    opacity var(--motion-base) var(--ease-standard),
+    scale var(--motion-reveal) var(--ease-standard);
+  transition-delay: calc(var(--reveal-index, 0) * 70ms);
+}
+
+.js-reveal [data-reveal='rule'].is-revealed {
+  scale: 1 1;
+}
+
+/* An architecture diagram resolves along its own flow: each stage settles in
+   sequence, each connector just after the stage it leaves. It is the one
+   place on the site where sequential motion carries information rather than
+   decoration, because the sequence IS the direction of the pipeline.
+
+   Opacity only, roughly 60ms per stage, once, on first sight. The finished
+   diagram is the static diagram: nothing animates on a loop, no path draws
+   itself, and the accessible text equivalent beside it is never hidden. */
+.js-reveal [data-reveal='diagram'] {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.js-reveal [data-reveal='diagram'] .arch-stage {
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--ease-standard);
+  transition-delay: calc(var(--stagger, 0) * 60ms);
+}
+
+.js-reveal [data-reveal='diagram'].is-revealed .arch-stage {
+  opacity: 1;
 }
 
 /* ---------------------------------------------------------------------------
@@ -332,9 +484,21 @@
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition:
-      background-color 150ms ease,
-      color 150ms ease,
-      border-color 150ms ease;
+      background-color var(--motion-fast) var(--ease-standard),
+      color var(--motion-fast) var(--ease-standard),
+      border-color var(--motion-fast) var(--ease-standard),
+      translate var(--motion-fast) var(--ease-standard);
+  }
+
+  /* Pressed state: one pixel down, no scale. A button that shrinks reads as
+     a toy; a button that takes the press reads as a control (§25). */
+  .btn:active {
+    translate: 0 1px;
+  }
+
+  /* The disabled resume control is not pressable, so it must not pretend. */
+  .btn.is-unavailable:active {
+    translate: none;
   }
 
   .btn-primary {
@@ -367,8 +531,8 @@
     text-decoration-thickness: 1px;
     text-underline-offset: 0.25em;
     transition:
-      text-decoration-color 150ms ease,
-      text-decoration-thickness 150ms ease;
+      text-decoration-color var(--motion-fast) var(--ease-standard),
+      text-decoration-thickness var(--motion-fast) var(--ease-standard);
   }
 
   .link-editorial:hover {
@@ -476,7 +640,7 @@
     border-bottom: var(--border-thin) solid var(--color-graphite-rule);
     border-radius: 0;
     color: var(--color-ink);
-    transition: border-color 150ms ease;
+    transition: border-color var(--motion-fast) var(--ease-standard);
   }
 
   .field-input:hover {
@@ -500,6 +664,27 @@
     resize: vertical;
     min-height: 7.5rem;
     line-height: 1.55;
+  }
+
+  /* A message that appears does so quickly and then stays put. Errors are
+     never faded in slowly or animated away: the point of the transition is
+     to show the reader where the new text arrived, not to make them wait
+     for it (§10). 140ms, opacity and 3px. */
+  @keyframes form-message-in {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .field-error,
+  .form-status-error,
+  .form-success {
+    animation: form-message-in var(--motion-base) var(--ease-standard) both;
   }
 
   .field-error {

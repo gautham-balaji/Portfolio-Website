@@ -61,7 +61,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
     <ProjectHero project={project} />
 
     {heroFigure && heroDiagram && (
-      <div class="container block block-hero-figure">
+      <div class="container block block-hero-figure enter" style="--enter-index: 5">
         <FigurePlate
           figure={heroFigure.figure}
           caption={heroFigure.caption}
@@ -78,7 +78,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
     )}
 
     {heroFigure && !heroDiagram && (
-      <div class="container block block-hero-figure">
+      <div class="container block block-hero-figure enter" style="--enter-index: 5">
         <FigurePlate
           figure={heroFigure.figure}
           caption={heroFigure.caption}
@@ -97,7 +97,9 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
     {d.overview && (
       <div class="container block">
         <div class="grid-12">
-          <p class="overview">{d.overview}</p>
+          <p class="overview" data-reveal>
+            {d.overview}
+          </p>
         </div>
       </div>
     )}
@@ -105,7 +107,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
     {d.flow && (
       <div class="container block">
         <div class="grid-12">
-          <div class="flow-wrap">
+          <div class="flow-wrap" data-reveal>
             <FlowDiagram label={d.flow.label} steps={d.flow.steps} />
           </div>
         </div>
@@ -114,7 +116,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
 
     <div class="container block">
       <div class="grid-12">
-        <div class="prose">
+        <div class="prose" data-reveal>
           <Content />
         </div>
       </div>
@@ -123,7 +125,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
     {d.decisions.length > 0 && (
       <div class="container block">
         <div class="grid-12">
-          <div class="decisions-wrap">
+          <div class="decisions-wrap" data-reveal>
             <DecisionList decisions={d.decisions} />
           </div>
         </div>
@@ -133,7 +135,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
     {d.metrics.length > 0 && (
       <div class="container block">
         <div class="grid-12">
-          <div class="metrics-wrap">
+          <div class="metrics-wrap" data-reveal>
             <MetricList metrics={d.metrics} />
           </div>
         </div>
@@ -153,7 +155,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
                 ? '(min-width: 1024px) 38vw, 100vw'
                 : '(min-width: 1024px) 76vw, 100vw';
             return (
-              <div class:list={['evidence-item', `is-${figure.span}`]}>
+              <div class:list={['evidence-item', `is-${figure.span}`]} data-reveal>
                 {diagram ? (
                   <FigurePlate
                     figure={figure.figure}
@@ -189,7 +191,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
     {d.limitations.length > 0 && (
       <section class="container block" aria-labelledby="limitations-heading">
         <div class="grid-12">
-          <div class="limitations">
+          <div class="limitations" data-reveal>
             <h2 id="limitations-heading" class="label limitations-heading">
               Limitations
             </h2>
@@ -203,7 +205,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
       </section>
     )}
 
-    <div class="container">
+    <div class="container" data-reveal>
       <ProjectNav previous={previous} next={next} />
     </div>
   </article>
@@ -347,6 +349,28 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
 </style>
 
 <style is:global>
+  /* ---------------------------------------------------------------------------
+     Evidence reveal.
+
+     Where a figure holds a real image, the crop opens: the image settles from
+     a 3% overscale back to its resting size inside the frame it already has,
+     while the figure itself fades up. Nothing pans, nothing parallaxes, and
+     the plates that stand in for missing evidence get no treatment at all,
+     because there is nothing there to reveal.
+
+     Global because the reveal target (.evidence-item) is composed here and
+     the image (.frame-image) is rendered by FigurePlate.astro, either side of
+     Astro's per-component style scoping.
+     --------------------------------------------------------------------------- */
+  .js-reveal [data-reveal] .frame-image {
+    scale: 1.03;
+    transition: scale var(--motion-editorial) var(--ease-entrance);
+  }
+
+  .js-reveal [data-reveal].is-revealed .frame-image {
+    scale: 1;
+  }
+
   /* ---------------------------------------------------------------------------
      Project prose.
 

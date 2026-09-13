@@ -3,7 +3,7 @@
  * Previous / next project navigation.
  *
  * The four projects form a sequence (MASTER_CONTENT.md §07), so the pages wrap
- * rather than dead-ending: 04 leads back to 01. Plain links, no transitions.
+ * rather than dead-ending: 04 leads back to 01.
  */
 import type { CollectionEntry } from 'astro:content';
 
@@ -60,10 +60,11 @@ const entries = [
     padding-block: clamp(1.5rem, 4vw, 2.25rem);
     text-decoration: none;
     color: var(--color-ink);
-    transition: background-color 150ms ease;
+    transition: background-color var(--motion-base) var(--ease-standard);
   }
 
-  .nav-link:hover {
+  .nav-link:hover,
+  .nav-link:focus-visible {
     background-color: var(--color-paper-soft);
   }
 
@@ -83,6 +84,9 @@ const entries = [
     font-size: clamp(1.5rem, 3.6vw, 2.5rem);
     text-transform: uppercase;
     overflow-wrap: break-word;
+    transition:
+      color var(--motion-base) var(--ease-standard),
+      translate var(--motion-base) var(--ease-standard);
   }
 
   .nav-positioning {
@@ -107,8 +111,12 @@ const entries = [
       background-color: transparent;
     }
 
-    .nav-link:hover .nav-title {
+    /* Keyboard gets the same treatment as the pointer: the destination
+       title is the thing that identifies the link, so it is what responds. */
+    .nav-link:hover .nav-title,
+    .nav-link:focus-visible .nav-title {
       color: var(--color-oxide-text);
+      translate: 0.25rem 0;
     }
   }
 </style>

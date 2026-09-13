@@ -12,8 +12,17 @@
  * reflow, so DOM order is the mobile order and desktop repositions the portrait
  * with grid placement.
  *
- * The name is a plain <h1>. Text Pressure (Phase 7) will attach to this node;
- * it must never be responsible for rendering it.
+ * The name is a plain <h1>. Text Pressure attaches to this node via
+ * `data-text-pressure` (src/scripts/textPressure.ts); it is never responsible
+ * for rendering it, so the heading is complete and readable with the script
+ * absent, blocked or declined.
+ *
+ * The entrance is pure CSS. It could have been driven by the reveal observer
+ * like every other section, but the hero is above the fold and should open the
+ * moment the page paints rather than wait for a deferred module: keyframes
+ * with `animation-fill-mode: both` need no JavaScript at all, so a reader with
+ * scripting disabled still gets the sequence, and the global reduced-motion
+ * rule collapses it to nothing.
  */
 import { Image } from 'astro:assets';
 import portrait from '@/assets/portrait/gautham-balaji.png';
@@ -25,17 +34,28 @@ import { RESUME_AVAILABLE, RESUME_PATH } from '@/lib/site';
   <div class="container">
     <div class="grid-12 hero-grid">
       <div class="hero-text">
-        <p class="label hero-eyebrow">{HERO.eyebrow}</p>
+        <p class="label hero-eyebrow enter" style="--enter-index: 0">
+          {HERO.eyebrow}
+        </p>
 
-        <h1 id="hero-name" class="display hero-name">
+        <h1
+          id="hero-name"
+          class="display hero-name enter"
+          style="--enter-index: 1"
+          data-text-pressure
+        >
           {HERO.heading}
         </h1>
 
-        <p class="hero-positioning">{HERO.positioning}</p>
+        <p class="hero-positioning enter" style="--enter-index: 2">
+          {HERO.positioning}
+        </p>
 
-        <p class="hero-supporting">{HERO.supporting}</p>
+        <p class="hero-supporting enter" style="--enter-index: 3">
+          {HERO.supporting}
+        </p>
 
-        <div class="hero-actions">
+        <div class="hero-actions enter" style="--enter-index: 4">
           <a href="#work" class="btn btn-primary">
             {HERO.primaryCta}
           </a>
@@ -54,7 +74,7 @@ import { RESUME_AVAILABLE, RESUME_PATH } from '@/lib/site';
         </div>
       </div>
 
-      <div class="hero-portrait">
+      <div class="hero-portrait enter" style="--enter-index: 5">
         <div class="portrait-frame">
           <Image
             src={portrait}
@@ -69,7 +89,7 @@ import { RESUME_AVAILABLE, RESUME_PATH } from '@/lib/site';
         <p class="label portrait-caption">PORTRAIT / 2026</p>
       </div>
 
-      <div class="hero-meta">
+      <div class="hero-meta enter" style="--enter-index: 6">
         <hr class="rule" />
         <div class="hero-meta-row">
           <p class="label">{HERO.location}</p>
@@ -82,7 +102,28 @@ import { RESUME_AVAILABLE, RESUME_PATH } from '@/lib/site';
   </div>
 </section>
 
+<script>
+  import '@/scripts/textPressure';
+</script>
+
 <style>
+  /* --- Text Pressure -----------------------------------------------------
+     Applied by src/scripts/textPressure.ts. Until (and unless) that runs,
+     none of these classes exist and the heading is ordinary text. */
+  .hero-name :global(.tp-word) {
+    /* Breaks may fall between words, never inside one. */
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .hero-name :global(.tp-char) {
+    display: inline-block;
+    /* The script locks an explicit width here, measured at rest, so a letter
+       under pressure grows within its own slot and the line never reflows. */
+    text-align: center;
+    will-change: font-variation-settings;
+  }
+
   .hero {
     padding-block: clamp(2.5rem, 7vw, 5.5rem) clamp(2.5rem, 6vw, 4.5rem);
   }

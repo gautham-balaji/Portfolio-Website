@@ -57,6 +57,27 @@ const personSchema = includePersonSchema ? serialiseSchema(buildPersonSchema()) 
       <script type="application/ld+json" is:inline set:html={personSchema}></script>
     )}
 
+    {/* Gates the scroll-reveal hidden state (src/styles/global.css).
+        Inline and synchronous on purpose: a deferred module would paint the
+        content first and then hide it. Two conditions must hold before any
+        element is allowed to start hidden -- JavaScript is running, and the
+        reader has not asked for reduced motion -- and the timeout is a
+        failsafe for the case where the reveal module never arrives, so a
+        network failure can never leave the page blank. */}
+    <script is:inline>
+      (function () {
+        try {
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          const root = document.documentElement;
+          root.classList.add('js-reveal');
+          window.setTimeout(function () {
+            if (!root.hasAttribute('data-reveal-ready')) root.classList.remove('js-reveal');
+          }, 2500);
+        } catch {
+          /* No matchMedia, no reveals. The page is already readable. */
+        }
+      })();
+    </script>
     <slot name="head" />
   </head>
 
@@ -72,5 +93,9 @@ const personSchema = includePersonSchema ? serialiseSchema(buildPersonSchema()) 
     </main>
 
     <slot name="footer" />
+
+    <script>
+      import '@/scripts/reveal';
+    </script>
   </body>
 </html>

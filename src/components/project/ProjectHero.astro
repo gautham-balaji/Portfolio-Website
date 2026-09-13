@@ -24,12 +24,12 @@ const number = String(order).padStart(2, '0');
 
 <header class="project-hero">
   <div class="container">
-    <a href="/#work" class="back-link">
+    <a href="/#work" class="back-link enter" style="--enter-index: 0">
       <span aria-hidden="true">&larr;</span>
       <span class="label">Selected Work</span>
     </a>
 
-    <p class="label hero-eyebrow">
+    <p class="label hero-eyebrow enter" style="--enter-index: 1">
       <span class="eyebrow-project">Project</span>
       <span aria-hidden="true" class="eyebrow-slash">
         /
@@ -38,11 +38,17 @@ const number = String(order).padStart(2, '0');
       {featured && <span class="eyebrow-flag">Flagship</span>}
     </p>
 
-    <h1 class="display hero-title">{title}</h1>
+    <h1 class="display hero-title enter" style="--enter-index: 2">
+      {title}
+    </h1>
 
-    {thesis && <p class="hero-thesis">{thesis}</p>}
+    {thesis && (
+      <p class="hero-thesis enter" style="--enter-index: 3">
+        {thesis}
+      </p>
+    )}
 
-    <div class="grid-12 hero-meta">
+    <div class="grid-12 hero-meta enter" style="--enter-index: 4">
       <dl class="meta-rail">
         <div class="meta-item">
           <dt class="label">Status</dt>
@@ -104,11 +110,22 @@ const number = String(order).padStart(2, '0');
     min-height: 44px;
     text-decoration: none;
     color: var(--color-graphite-text);
-    transition: color 150ms ease;
+    transition: color var(--motion-fast) var(--ease-standard);
   }
 
   .back-link:hover {
     color: var(--color-ink);
+  }
+
+  /* The one arrow on the site that moves, because here the movement is the
+     meaning: back. Everything else keeps its arrows still (§25). */
+  .back-link span[aria-hidden] {
+    transition: translate var(--motion-base) var(--ease-standard);
+  }
+
+  .back-link:hover span[aria-hidden],
+  .back-link:focus-visible span[aria-hidden] {
+    translate: -0.25rem 0;
   }
 
   .back-link:hover .label {

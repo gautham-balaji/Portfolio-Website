@@ -24,7 +24,7 @@ const period = (start: string, end: string | null) => `${start} — ${end ?? 'Pr
 
 <Section id="experience" number="02" label="Experience">
   {featured && (
-    <article class="feature" aria-labelledby="exp-featured">
+    <article class="feature" aria-labelledby="exp-featured" data-reveal>
       <div class="grid-12 feature-grid">
         <div class="feature-ident">
           <h3 id="exp-featured" class="display feature-company">
@@ -58,7 +58,7 @@ const period = (start: string, end: string | null) => `${start} — ${end ?? 'Pr
 
   <div class="rows">
     {others.map((entry) => (
-      <article class="row">
+      <article class="row" data-reveal>
         <hr class="rule" />
         <div class="grid-12 row-grid">
           <div class="row-ident">

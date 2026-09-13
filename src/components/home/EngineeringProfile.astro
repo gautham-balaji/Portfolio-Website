@@ -18,7 +18,7 @@ const skills = (await getCollection('skills')).sort((a, b) => a.data.order - b.d
 ---
 
 <Section id="profile" number="03" label="Engineering Profile">
-  <div class="grid-12 profile-grid">
+  <div class="grid-12 profile-grid" data-reveal>
     <div class="profile-lead">
       <h2 class="display profile-headline">{ENGINEERING_PROFILE.headline}</h2>
 
@@ -42,7 +42,7 @@ const skills = (await getCollection('skills')).sort((a, b) => a.data.order - b.d
   </div>
 
   {/* Skills as a technical index, not a tag cloud (MASTER_CONTENT §17). */}
-  <div class="skills">
+  <div class="skills" data-reveal>
     <hr class="rule" />
     <dl class="skills-grid">
       {skills.map((group) => (
@@ -55,7 +55,7 @@ const skills = (await getCollection('skills')).sort((a, b) => a.data.order - b.d
   </div>
 
   {/* The single largest type moment on the page (§18). Used once. */}
-  <div class="statement">
+  <div class="statement" data-reveal>
     <hr class="rule rule-ink" />
     <p class="display statement-text">
       {ENGINEERING_PROFILE.statement.map((line) => (
