@@ -1,0 +1,34 @@
+# build output
+dist/
+.vercel/
+.astro/
+
+# dependencies
+node_modules/
+
+# environment (never commit real credentials)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# test artefacts
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+coverage/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
