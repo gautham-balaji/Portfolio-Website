@@ -1,0 +1,263 @@
+---
+/**
+ * 02 / EXPERIENCE (DESIGN_SYSTEM.md §17, §41; MASTER_CONTENT.md §12).
+ *
+ * Admrls is the feature block and occupies substantially more vertical space
+ * than the other two, which are compact ruled rows. That asymmetry is the
+ * hierarchy; there is no "featured company" badge (§17).
+ *
+ * NDA discipline: only the public-safe framing from MASTER_CONTENT.md §12 is
+ * rendered. No client names, no internal product names, no metrics.
+ */
+import { getCollection } from 'astro:content';
+import Section from '@/components/layout/Section.astro';
+
+const experience = (await getCollection('experience')).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+const featured = experience.find((e) => e.data.featured);
+const others = experience.filter((e) => !e.data.featured);
+
+const period = (start: string, end: string | null) => `${start} — ${end ?? 'Present'}`;
+---
+
+<Section id="experience" number="02" label="Experience">
+  {featured && (
+    <article class="feature" aria-labelledby="exp-featured">
+      <div class="grid-12 feature-grid">
+        <div class="feature-ident">
+          <h3 id="exp-featured" class="display feature-company">
+            {featured.data.company}
+          </h3>
+          <p class="label feature-role">{featured.data.role}</p>
+          <p class="label feature-dates">
+            {period(featured.data.startDate, featured.data.endDate)}
+          </p>
+        </div>
+
+        <div class="feature-body">
+          <p class="feature-intro">{featured.data.description}</p>
+
+          <ul class="highlights">
+            {featured.data.highlights.map((h) => (
+              <li class="highlight">{h}</li>
+            ))}
+          </ul>
+
+          <div class="stack">
+            <p class="label stack-key">Stack</p>
+            <p class="label stack-value">
+              {featured.data.technologies.join(' / ').toUpperCase()}
+            </p>
+          </div>
+        </div>
+      </div>
+    </article>
+  )}
+
+  <div class="rows">
+    {others.map((entry) => (
+      <article class="row">
+        <hr class="rule" />
+        <div class="grid-12 row-grid">
+          <div class="row-ident">
+            <h3 class="display row-company">{entry.data.company}</h3>
+            <p class="label row-role">{entry.data.role}</p>
+          </div>
+
+          <p class="label row-dates">{period(entry.data.startDate, entry.data.endDate)}</p>
+
+          <div class="row-body">
+            <p class="row-intro">{entry.data.description}</p>
+            <ul class="highlights highlights-compact">
+              {entry.data.highlights.map((h) => (
+                <li class="highlight">{h}</li>
+              ))}
+            </ul>
+            {entry.data.technologies.length > 0 && (
+              <p class="label row-stack">
+                {entry.data.technologies.join(' / ').toUpperCase()}
+              </p>
+            )}
+          </div>
+        </div>
+      </article>
+    ))}
+    <hr class="rule" />
+  </div>
+</Section>
+
+<style>
+  /* --- Featured (Admrls) --- */
+  .feature {
+    margin-bottom: clamp(3rem, 7vw, 5rem);
+  }
+
+  .feature-grid {
+    align-items: start;
+  }
+
+  .feature-ident,
+  .feature-body {
+    grid-column: 1 / -1;
+  }
+
+  .feature-company {
+    font-size: clamp(2.25rem, 6vw, 4.25rem);
+    /* No uppercase transform. DESIGN_SYSTEM §17 requires this render as
+       "Admrls", and MASTER_CONTENT §12 flags the spelling as important.
+       Uppercasing would also destroy the casing in "CrftHQ". */
+  }
+
+  .feature-role {
+    margin-top: 0.875rem;
+    color: var(--color-ink);
+  }
+
+  .feature-dates {
+    margin-top: 0.25rem;
+  }
+
+  .feature-intro {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.25rem, 2.4vw, 1.875rem);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    max-width: 30ch;
+  }
+
+  .highlights {
+    list-style: none;
+    margin: clamp(1.5rem, 3vw, 2.25rem) 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .highlight {
+    position: relative;
+    padding: 0.875rem 0 0.875rem 2.25rem;
+    border-top: var(--border-thin) solid var(--color-paper-soft);
+    font-size: var(--text-body);
+    line-height: 1.55;
+    color: var(--color-graphite-text);
+  }
+
+  /* A short rule rather than a bullet or a checkmark. */
+  .highlight::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1.55em;
+    width: 1.25rem;
+    height: 1px;
+    background-color: var(--color-graphite-rule);
+  }
+
+  .highlights-compact .highlight {
+    font-size: var(--text-body);
+  }
+
+  .stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem 1rem;
+    margin-top: 1.75rem;
+    padding-top: 1rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .stack-key {
+    color: var(--color-graphite-text);
+  }
+
+  .stack-value {
+    color: var(--color-ink);
+    flex: 1 1 20ch;
+  }
+
+  /* --- Compact rows --- */
+  .row-grid {
+    padding-block: clamp(1.75rem, 4vw, 2.75rem);
+    align-items: start;
+  }
+
+  .row-ident,
+  .row-dates,
+  .row-body {
+    grid-column: 1 / -1;
+  }
+
+  .row-company {
+    font-size: clamp(1.5rem, 3.4vw, 2.25rem);
+    /* Casing preserved, as above: "CrftHQ", not "CRFTHQ". */
+  }
+
+  .row-role {
+    margin-top: 0.5rem;
+    color: var(--color-ink);
+  }
+
+  .row-dates {
+    margin-top: 0.25rem;
+  }
+
+  .row-intro {
+    font-size: var(--text-body-lg);
+    line-height: 1.5;
+    color: var(--color-ink);
+    max-width: 52ch;
+  }
+
+  .row-stack {
+    margin-top: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .feature-ident {
+      grid-column: 1 / span 5;
+    }
+
+    .feature-body {
+      grid-column: 6 / span 7;
+    }
+
+    .row-ident {
+      grid-column: 1 / span 4;
+    }
+
+    .row-dates {
+      grid-column: 5 / span 3;
+      margin-top: 0.75rem;
+    }
+
+    .row-body {
+      grid-column: 8 / span 5;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .feature-ident {
+      grid-column: 1 / span 4;
+    }
+
+    .feature-body {
+      grid-column: 6 / span 7;
+    }
+
+    .row-ident {
+      grid-column: 1 / span 3;
+    }
+
+    .row-dates {
+      grid-column: 4 / span 2;
+    }
+
+    .row-body {
+      grid-column: 7 / span 6;
+    }
+  }
+</style>

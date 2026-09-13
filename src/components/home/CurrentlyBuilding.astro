@@ -1,0 +1,282 @@
+---
+/**
+ * 05 / CURRENTLY BUILDING (DESIGN_SYSTEM.md §20; MASTER_CONTENT.md §15).
+ *
+ * Visually distinct from the completed archive: it sits on Soft Paper rather
+ * than Paper, so it reads as live work rather than another project entry.
+ *
+ * Honesty is structural here. §11, §15 and §23 require that the generative
+ * model is not presented as trained and that no production deployment is
+ * implied, so the honest-status line and the stated limitations are rendered
+ * as first-class content, not hidden in a footnote. The pipeline sequence
+ * carries no percentage and no progress bar (§20, §49).
+ */
+import { getCollection } from 'astro:content';
+import Section from '@/components/layout/Section.astro';
+import FigurePlate from '@/components/project/FigurePlate.astro';
+import { CURRENTLY_BUILDING } from '@/lib/copy';
+
+const projects = await getCollection('projects');
+const geo = projects.find((p) => p.id === 'geocounterfactual');
+
+if (!geo) {
+  throw new Error('Expected a `geocounterfactual` project entry for Currently Building.');
+}
+
+const g = geo.data;
+---
+
+<div class="cb-surface">
+  <Section id="currently-building" number="05" label="Currently Building">
+    <div class="grid-12 cb-grid">
+      <div class="cb-lead">
+        <h2 class="display cb-headline">{CURRENTLY_BUILDING.headline}</h2>
+        <p class="cb-intro">{CURRENTLY_BUILDING.intro}</p>
+      </div>
+
+      <div class="cb-media">
+        <FigurePlate
+          figure="02"
+          caption="GeoCounterfactual: before and after satellite comparison with the critic's rejection overlay."
+          ratio="16 / 9"
+          sizes="(min-width: 1024px) 58vw, 100vw"
+        />
+      </div>
+
+      <aside class="cb-panel" aria-label="Project status">
+        <dl class="panel-list">
+          <div class="panel-item">
+            <dt class="label">Status</dt>
+            <dd class="panel-value">{g.status}</dd>
+          </div>
+          <div class="panel-item">
+            <dt class="label">Year</dt>
+            <dd class="panel-value">{g.year}</dd>
+          </div>
+          <div class="panel-item">
+            <dt class="label">Role</dt>
+            <dd class="panel-value">{g.role}</dd>
+          </div>
+          <div class="panel-item">
+            <dt class="label">Stack</dt>
+            <dd class="panel-value panel-stack">{g.technologies.join(' / ')}</dd>
+          </div>
+        </dl>
+
+        <div class="panel-block">
+          <p class="label label-oxide">Current work</p>
+          <ul class="work-list">
+            {CURRENTLY_BUILDING.currentWork.map((item) => (
+              <li class="work-item">{item}</li>
+            ))}
+          </ul>
+        </div>
+
+        {g.github && (
+          <a
+            href={g.github}
+            class="btn btn-secondary panel-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View source
+          </a>
+        )}
+      </aside>
+
+      <div class="cb-status">
+        <hr class="rule" />
+        <div class="status-inner">
+          <p class="label label-oxide">Honest status</p>
+          <p class="status-text">{CURRENTLY_BUILDING.honestStatus}</p>
+        </div>
+
+        <ol class="pipeline" aria-label="Pipeline stages">
+          {CURRENTLY_BUILDING.pipeline.map((stage, i) => (
+            <li class="pipeline-stage">
+              <span class="label pipeline-index">{String(i + 1).padStart(2, '0')}</span>
+              <span class="label pipeline-name">{stage}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </Section>
+</div>
+
+<style>
+  .cb-surface {
+    background-color: var(--color-paper-soft);
+  }
+
+  /* Contrast guard.
+     Oxide text on Paper is 5.08:1, but on Soft Paper it drops to 4.50:1, a
+     hair under the 4.5:1 AA threshold for text below 24px. Rather than change
+     a locked palette token, small Oxide labels fall back to Ink (13.06:1) on
+     this surface only. Large Oxide type is unaffected: it needs just 3:1 and
+     clears comfortably. */
+  .cb-surface :global(.section-number),
+  .cb-surface :global(.label-oxide) {
+    color: var(--color-ink);
+  }
+
+  .cb-grid {
+    align-items: start;
+  }
+
+  .cb-lead,
+  .cb-media,
+  .cb-panel,
+  .cb-status {
+    grid-column: 1 / -1;
+  }
+
+  .cb-headline {
+    font-size: clamp(2rem, 5.2vw, 4.25rem);
+    max-width: 20ch;
+  }
+
+  .cb-intro {
+    margin-top: clamp(1.25rem, 3vw, 1.75rem);
+    font-size: var(--text-body-lg);
+    line-height: 1.6;
+    color: var(--color-graphite-text);
+    max-width: 58ch;
+  }
+
+  .cb-media {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .cb-panel {
+    margin-top: 2.25rem;
+  }
+
+  .panel-list {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.125rem 1.5rem;
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .panel-value {
+    margin: 0.25rem 0 0;
+    font-size: var(--text-body);
+    line-height: 1.4;
+    color: var(--color-ink);
+  }
+
+  .panel-stack {
+    font-size: var(--text-meta);
+    line-height: 1.6;
+  }
+
+  .panel-block {
+    margin-top: 1.75rem;
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .work-list {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .work-item {
+    position: relative;
+    padding-left: 1.75rem;
+    font-size: var(--text-body);
+    line-height: 1.5;
+    color: var(--color-graphite-text);
+  }
+
+  .work-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.75em;
+    width: 1rem;
+    height: 1px;
+    background-color: var(--color-graphite-rule);
+  }
+
+  .panel-link {
+    margin-top: 1.75rem;
+  }
+
+  /* --- Status + pipeline --- */
+  .cb-status {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .status-inner {
+    display: grid;
+    gap: 0.625rem;
+    padding-top: 1.25rem;
+    max-width: 72ch;
+  }
+
+  .status-text {
+    font-size: var(--text-body-lg);
+    line-height: 1.55;
+    color: var(--color-ink);
+  }
+
+  .pipeline {
+    list-style: none;
+    margin: 2rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2.5rem;
+  }
+
+  .pipeline-stage {
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+  }
+
+  .pipeline-index {
+    color: var(--color-graphite-text);
+  }
+
+  .pipeline-name {
+    color: var(--color-ink);
+  }
+
+  @media (min-width: 1024px) {
+    .cb-lead {
+      grid-column: 1 / span 8;
+      grid-row: 1;
+    }
+
+    .cb-media {
+      grid-column: 1 / span 8;
+      grid-row: 2;
+    }
+
+    /* The panel is taller than the figure. Spanning both rows stops it
+       inflating row 2 and leaving dead space beneath the figure. */
+    .cb-panel {
+      grid-column: 10 / span 3;
+      grid-row: 2 / span 2;
+      margin-top: clamp(2.5rem, 6vw, 4rem);
+    }
+
+    .panel-list {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .cb-status {
+      grid-column: 1 / span 8;
+      grid-row: 3;
+    }
+  }
+</style>

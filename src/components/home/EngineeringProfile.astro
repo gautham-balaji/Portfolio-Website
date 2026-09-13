@@ -1,0 +1,191 @@
+---
+/**
+ * 03 / ENGINEERING PROFILE (DESIGN_SYSTEM.md §18; MASTER_CONTENT.md §13).
+ *
+ * Asymmetric: headline and prose on the left, four numbered principles on the
+ * right. The editorial statement then breaks full width as the largest type
+ * moment on the page.
+ *
+ * Explicitly not: skill percentages, proficiency ratings, progress bars, or a
+ * pill wall (§58). Skills data exists in its own collection and is rendered
+ * here as a compact monospace index, not as tags.
+ */
+import { getCollection } from 'astro:content';
+import Section from '@/components/layout/Section.astro';
+import { ENGINEERING_PROFILE } from '@/lib/copy';
+
+const skills = (await getCollection('skills')).sort((a, b) => a.data.order - b.data.order);
+---
+
+<Section id="profile" number="03" label="Engineering Profile">
+  <div class="grid-12 profile-grid">
+    <div class="profile-lead">
+      <h2 class="display profile-headline">{ENGINEERING_PROFILE.headline}</h2>
+
+      <div class="profile-body">
+        {ENGINEERING_PROFILE.body.map((paragraph) => (
+          <p class="profile-para">{paragraph}</p>
+        ))}
+      </div>
+    </div>
+
+    <ol class="principles">
+      {ENGINEERING_PROFILE.principles.map((principle) => (
+        <li class="principle">
+          <p class="label principle-number">
+            {principle.number} / {principle.title}
+          </p>
+          <p class="principle-body">{principle.body}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  {/* Skills as a technical index, not a tag cloud (MASTER_CONTENT §17). */}
+  <div class="skills">
+    <hr class="rule" />
+    <dl class="skills-grid">
+      {skills.map((group) => (
+        <div class="skill-group">
+          <dt class="label skill-category">{group.data.category}</dt>
+          <dd class="skill-items">{group.data.items.join(', ')}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+
+  {/* The single largest type moment on the page (§18). Used once. */}
+  <div class="statement">
+    <hr class="rule rule-ink" />
+    <p class="display statement-text">
+      {ENGINEERING_PROFILE.statement.map((line) => (
+        <span class="statement-line">{line}</span>
+      ))}
+    </p>
+  </div>
+</Section>
+
+<style>
+  .profile-grid {
+    align-items: start;
+  }
+
+  .profile-lead,
+  .principles {
+    grid-column: 1 / -1;
+  }
+
+  .profile-headline {
+    font-size: clamp(2rem, 4.6vw, 3.75rem);
+    max-width: 18ch;
+  }
+
+  .profile-body {
+    display: grid;
+    gap: 1.125rem;
+    margin-top: clamp(1.75rem, 4vw, 2.5rem);
+    max-width: 62ch;
+  }
+
+  .profile-para {
+    font-size: var(--text-body);
+    line-height: 1.65;
+    color: var(--color-graphite-text);
+  }
+
+  .profile-para:first-child {
+    color: var(--color-ink);
+    font-size: var(--text-body-lg);
+  }
+
+  /* --- Principles --- */
+  .principles {
+    list-style: none;
+    margin: clamp(2.5rem, 6vw, 0) 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .principle {
+    padding-block: 1.25rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .principle-number {
+    color: var(--color-ink);
+  }
+
+  .principle-body {
+    margin-top: 0.5rem;
+    font-size: var(--text-body);
+    line-height: 1.55;
+    color: var(--color-graphite-text);
+  }
+
+  /* --- Skills index --- */
+  .skills {
+    margin-top: clamp(3rem, 7vw, 5rem);
+  }
+
+  .skills-grid {
+    margin: 0;
+    padding-top: 1.5rem;
+    display: grid;
+    gap: 1.5rem 2rem;
+  }
+
+  .skill-group {
+    min-width: 0;
+  }
+
+  .skill-category {
+    color: var(--color-oxide-text);
+  }
+
+  .skill-items {
+    margin: 0.5rem 0 0;
+    font-size: var(--text-body);
+    line-height: 1.55;
+    color: var(--color-ink);
+  }
+
+  /* --- Editorial statement --- */
+  .statement {
+    margin-top: clamp(4rem, 10vw, 8rem);
+  }
+
+  .statement-text {
+    display: flex;
+    flex-direction: column;
+    font-size: var(--text-statement);
+    line-height: 0.95;
+    text-transform: uppercase;
+    padding-top: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .statement-line:last-child {
+    color: var(--color-oxide-text);
+  }
+
+  @media (min-width: 768px) {
+    .skills-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .profile-lead {
+      grid-column: 1 / span 6;
+    }
+
+    .principles {
+      grid-column: 8 / span 5;
+      margin-top: 0;
+    }
+
+    .skills-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

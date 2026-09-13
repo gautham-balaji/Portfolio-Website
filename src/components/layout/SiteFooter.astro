@@ -1,0 +1,117 @@
+---
+/**
+ * Minimal editorial footer (DESIGN_SYSTEM.md §23).
+ *
+ * Left: name. Middle: location. Right: the three verified destinations.
+ * Bottom: copyright, computed at build time rather than hardcoded.
+ *
+ * Only GitHub, LinkedIn and email appear. MASTER_CONTENT.md §01: "Only GitHub
+ * and LinkedIn are confirmed social profiles."
+ */
+import { SITE } from '@/lib/site';
+
+const year = new Date().getFullYear();
+
+const links = [
+  { label: 'GitHub', href: SITE.github, external: true },
+  { label: 'LinkedIn', href: SITE.linkedin, external: true },
+  { label: 'Email', href: `mailto:${SITE.email}`, external: false },
+];
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <hr class="rule rule-ink" />
+
+    <div class="footer-grid">
+      <p class="footer-name">{SITE.name}</p>
+
+      <p class="label footer-location">{SITE.locationShort}</p>
+
+      <ul class="footer-links">
+        {links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              class="footer-link"
+              {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            >
+              {link.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <p class="label footer-copyright">
+      &copy; {year} {SITE.name}
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    padding-block: 2.5rem 3rem;
+  }
+
+  .footer-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 1rem 2rem;
+    padding-top: 1.75rem;
+  }
+
+  .footer-name {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+
+  .footer-location {
+    flex: 1 1 auto;
+  }
+
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--color-graphite-rule);
+    text-underline-offset: 0.3em;
+    transition:
+      text-decoration-color 150ms ease,
+      text-decoration-thickness 150ms ease;
+  }
+
+  .footer-link:hover {
+    text-decoration-color: var(--color-oxide-rule);
+    text-decoration-thickness: 2px;
+  }
+
+  .footer-copyright {
+    margin-top: 2.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .footer-location {
+      text-align: center;
+    }
+  }
+</style>

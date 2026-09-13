@@ -1,0 +1,315 @@
+---
+/**
+ * Contact (DESIGN_SYSTEM.md §22, §48; MASTER_CONTENT.md §18).
+ *
+ * Left: the CTA, a large email link, and the three destinations.
+ * Right: the form.
+ *
+ * Phase 2 ships the form *shell*: real semantics, real field names matching
+ * the Zod schema in src/lib/contact.ts, and a native POST to /api/contact so
+ * it genuinely delivers mail without JavaScript. It is not inert
+ * (MASTER_CONTENT.md §18).
+ *
+ * Two deliberate omissions, both for Phase 6:
+ *   - `startedAt` is not rendered. On a prerendered page it would carry the
+ *     BUILD timestamp, which would exceed MAX_FORM_AGE_MS and cause every
+ *     submission to be silently discarded as stale. The schema treats a
+ *     missing value as "no signal", so the honeypot still applies.
+ *   - The no-JS response is currently the endpoint's raw JSON. The island and
+ *     the inline idle/submitting/success/error states land in Phase 6.
+ *
+ * Labels sit above their fields and are never replaced by placeholders (§48).
+ */
+import { HONEYPOT_FIELD, LIMITS } from '@/lib/contact';
+import { CONTACT } from '@/lib/copy';
+import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
+---
+
+<section id="contact" class="contact section-pad" aria-labelledby="contact-heading">
+  <div class="container">
+    <hr class="rule rule-ink" />
+
+    <div class="grid-12 contact-grid">
+      <div class="contact-lead">
+        <h2 id="contact-heading" class="display contact-heading">
+          {CONTACT.heading}
+        </h2>
+
+        <p class="contact-supporting">{CONTACT.supporting}</p>
+
+        <a href={`mailto:${SITE.email}`} class="contact-email">
+          {SITE.email}
+        </a>
+
+        <ul class="contact-links">
+          <li>
+            <a
+              href={SITE.github}
+              class="contact-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+            </a>
+          </li>
+          <li>
+            <a
+              href={SITE.linkedin}
+              class="contact-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              LinkedIn
+            </a>
+          </li>
+          <li>
+            {RESUME_AVAILABLE ? (
+              <a href={RESUME_PATH} class="contact-link" download>
+                Resume
+              </a>
+            ) : (
+              <span class="contact-link is-unavailable">Resume coming soon</span>
+            )}
+          </li>
+        </ul>
+      </div>
+
+      <div class="contact-form-wrap">
+        <form class="contact-form" action="/api/contact" method="post">
+          <p class="label form-key">Send a message</p>
+
+          <div class="field">
+            <label class="field-label" for="contact-name">
+              Name
+            </label>
+            <input
+              class="field-input"
+              type="text"
+              id="contact-name"
+              name="name"
+              autocomplete="name"
+              minlength={LIMITS.nameMin}
+              maxlength={LIMITS.nameMax}
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="contact-email">
+              Email
+            </label>
+            <input
+              class="field-input"
+              type="email"
+              id="contact-email"
+              name="email"
+              autocomplete="email"
+              maxlength={LIMITS.emailMax}
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="contact-message">
+              Message
+            </label>
+            <textarea
+              class="field-input field-textarea"
+              id="contact-message"
+              name="message"
+              rows="5"
+              minlength={LIMITS.messageMin}
+              maxlength={LIMITS.messageMax}
+              required
+            ></textarea>
+          </div>
+
+          {/* Honeypot. Hidden from sight, from assistive technology, and from
+              the tab order, so only an automated filler will complete it. */}
+          <div class="honeypot" aria-hidden="true">
+            <label for="contact-company">Company</label>
+            <input
+              type="text"
+              id="contact-company"
+              name={HONEYPOT_FIELD}
+              tabindex="-1"
+              autocomplete="off"
+            />
+          </div>
+
+          <button class="btn btn-primary form-submit" type="submit">
+            Send message
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .contact-grid {
+    align-items: start;
+    padding-top: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .contact-lead,
+  .contact-form-wrap {
+    grid-column: 1 / -1;
+  }
+
+  .contact-heading {
+    font-size: clamp(2.25rem, 6.5vw, 5rem);
+    text-transform: uppercase;
+    max-width: 16ch;
+  }
+
+  .contact-supporting {
+    margin-top: clamp(1.25rem, 3vw, 1.75rem);
+    font-size: var(--text-body-lg);
+    line-height: 1.55;
+    color: var(--color-graphite-text);
+    max-width: 46ch;
+  }
+
+  .contact-email {
+    /* Flex with a min-height so the primary contact action clears the 44px
+       target rule even at the smallest type size (§33). */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: clamp(1.75rem, 4vw, 2.5rem);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.125rem, 2.8vw, 2rem);
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--color-oxide-rule);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.22em;
+    word-break: break-word;
+    transition: text-decoration-thickness 150ms ease;
+  }
+
+  .contact-email:hover {
+    text-decoration-thickness: 3px;
+  }
+
+  .contact-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.75rem;
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+  }
+
+  .contact-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--color-graphite-rule);
+    text-underline-offset: 0.3em;
+    transition:
+      text-decoration-color 150ms ease,
+      text-decoration-thickness 150ms ease;
+  }
+
+  .contact-link:hover {
+    text-decoration-color: var(--color-oxide-rule);
+    text-decoration-thickness: 2px;
+  }
+
+  .is-unavailable {
+    color: var(--color-graphite-text);
+    text-decoration: none;
+    cursor: default;
+  }
+
+  /* --- Form --- */
+  .contact-form-wrap {
+    margin-top: clamp(3rem, 7vw, 0);
+  }
+
+  .contact-form {
+    display: grid;
+    gap: 1.5rem;
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .form-key {
+    color: var(--color-oxide-text);
+  }
+
+  .field {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-graphite-text);
+  }
+
+  /* Editorial field: an underline, not a rounded pill (§48). */
+  .field-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.625rem 0.125rem;
+    background-color: transparent;
+    border: 0;
+    border-bottom: var(--border-thin) solid var(--color-graphite-rule);
+    border-radius: 0;
+    color: var(--color-ink);
+    transition: border-color 150ms ease;
+  }
+
+  .field-input:hover {
+    border-bottom-color: var(--color-ink);
+  }
+
+  .field-input:focus-visible {
+    border-bottom-color: var(--color-oxide-rule);
+    outline-offset: 4px;
+  }
+
+  .field-textarea {
+    resize: vertical;
+    min-height: 7.5rem;
+    line-height: 1.55;
+  }
+
+  .honeypot {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .form-submit {
+    justify-self: start;
+  }
+
+  @media (min-width: 1024px) {
+    .contact-lead {
+      grid-column: 1 / span 6;
+    }
+
+    .contact-form-wrap {
+      grid-column: 8 / span 5;
+      margin-top: 0;
+    }
+  }
+</style>

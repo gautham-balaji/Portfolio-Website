@@ -1,0 +1,39 @@
+---
+/**
+ * Homepage.
+ *
+ * Section order is fixed by MASTER_CONTENT.md §05 and the numbering is
+ * information, not decoration: it is the reader's position in the sequence.
+ *
+ * Every section is static Astro. No islands are hydrated on this page.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import SiteNav from '@/components/layout/SiteNav.astro';
+import SiteFooter from '@/components/layout/SiteFooter.astro';
+import Hero from '@/components/home/Hero.astro';
+import SelectedWork from '@/components/home/SelectedWork.astro';
+import Experience from '@/components/home/Experience.astro';
+import EngineeringProfile from '@/components/home/EngineeringProfile.astro';
+import About from '@/components/home/About.astro';
+import CurrentlyBuilding from '@/components/home/CurrentlyBuilding.astro';
+import Education from '@/components/home/Education.astro';
+import ContactCTA from '@/components/home/ContactCTA.astro';
+import { SITE } from '@/lib/site';
+
+const description = `${SITE.name}, ${SITE.title.toLowerCase()} in ${SITE.locationShort}. ${SITE.positioning}`;
+---
+
+<BaseLayout description={description} path="/" includePersonSchema>
+  <SiteNav slot="header" />
+
+  <Hero />
+  <SelectedWork />
+  <Experience />
+  <EngineeringProfile />
+  <About />
+  <CurrentlyBuilding />
+  <Education />
+  <ContactCTA />
+
+  <SiteFooter slot="footer" />
+</BaseLayout>

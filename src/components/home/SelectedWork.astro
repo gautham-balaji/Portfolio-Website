@@ -1,0 +1,242 @@
+---
+/**
+ * 01 / SELECTED WORK (DESIGN_SYSTEM.md §13, §14; MASTER_CONTENT.md §07, §24).
+ *
+ * Hierarchy is carried by composition, not by badges:
+ *   - The flagship gets a full case-study block: oversized number, project
+ *     title at display scale, a thesis line, a large figure, and a metadata
+ *     rail. It occupies roughly three times the vertical space of a row.
+ *   - Projects 02-04 are ruled index rows, text-led and without media.
+ *
+ * That difference is the point. Four equal cards would flatten the hierarchy
+ * MASTER_CONTENT.md §24 defines.
+ */
+import { getCollection } from 'astro:content';
+import Section from '@/components/layout/Section.astro';
+import FigurePlate from '@/components/project/FigurePlate.astro';
+import ProjectRow from '@/components/project/ProjectRow.astro';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+
+const flagship = projects.find((p) => p.data.featured);
+const rest = projects.filter((p) => !p.data.featured);
+
+if (!flagship) {
+  throw new Error(
+    'No featured project found. Exactly one project must set `featured: true` ' +
+      '(MASTER_CONTENT.md §24 designates the XAI Chess Engine as the flagship).',
+  );
+}
+
+const f = flagship.data;
+
+/* Earliest year across the set, so the range is accurate rather than derived
+   from the flagship alone (VERA is 2025, the flagship is 2026). */
+const earliestYear = Math.min(...projects.map((p) => p.data.year));
+---
+
+<Section id="work" number="01" label="Selected Work">
+  <div class="intro">
+    <h2 class="display intro-heading">THINGS I'VE BUILT.</h2>
+    <p class="intro-note label">
+      {projects.length} PROJECTS / {earliestYear} &ndash; PRESENT
+    </p>
+  </div>
+
+  {/* ---------- Flagship ---------- */}
+  <article class="flagship" aria-labelledby="flagship-title">
+    <div class="grid-12 flagship-head">
+      <p class="flagship-number display">01</p>
+
+      <div class="flagship-headline">
+        <h3 id="flagship-title" class="display flagship-title">
+          {f.title}
+        </h3>
+        <p class="flagship-thesis">{f.positioning}</p>
+      </div>
+    </div>
+
+    <div class="grid-12 flagship-body">
+      <div class="flagship-media">
+        <FigurePlate
+          figure="01"
+          caption="XAI Chess Engine interface: board, live analysis, ranked moves and generated explanations."
+          ratio="16 / 10"
+          sizes="(min-width: 1024px) 62vw, 100vw"
+        />
+      </div>
+
+      <div class="flagship-meta">
+        <dl class="meta-list">
+          <div class="meta-item">
+            <dt class="label">Status</dt>
+            <dd class="meta-value">{f.status}</dd>
+          </div>
+          <div class="meta-item">
+            <dt class="label">Year</dt>
+            <dd class="meta-value">{f.year}</dd>
+          </div>
+          <div class="meta-item">
+            <dt class="label">Role</dt>
+            <dd class="meta-value">{f.role}</dd>
+          </div>
+          <div class="meta-item">
+            <dt class="label">Stack</dt>
+            <dd class="meta-value meta-stack">{f.technologies.join(' / ')}</dd>
+          </div>
+        </dl>
+
+        <p class="flagship-descriptor">{f.descriptor}</p>
+
+        {f.github && (
+          <a
+            href={f.github}
+            class="btn btn-secondary flagship-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View source
+          </a>
+        )}
+      </div>
+    </div>
+  </article>
+
+  {/* ---------- Index rows ---------- */}
+  <div class="rows">
+    {rest.map((project) => (
+      <ProjectRow project={project} />
+    ))}
+    <hr class="rule" />
+  </div>
+</Section>
+
+<style>
+  .intro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+    margin-bottom: clamp(3rem, 8vw, 6rem);
+  }
+
+  .intro-heading {
+    font-size: var(--text-section);
+    text-transform: uppercase;
+  }
+
+  /* --- Flagship --- */
+  .flagship {
+    margin-bottom: clamp(4rem, 10vw, 8rem);
+  }
+
+  .flagship-head {
+    align-items: start;
+    margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
+  }
+
+  .flagship-number {
+    grid-column: 1 / -1;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    line-height: 1;
+    color: var(--color-oxide-text);
+  }
+
+  .flagship-headline {
+    grid-column: 1 / -1;
+  }
+
+  .flagship-title {
+    font-size: var(--text-project);
+    text-transform: uppercase;
+  }
+
+  .flagship-thesis {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.25rem, 2.6vw, 2.125rem);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin-top: clamp(0.875rem, 2vw, 1.25rem);
+    max-width: 24ch;
+    text-wrap: balance;
+  }
+
+  .flagship-media,
+  .flagship-meta {
+    grid-column: 1 / -1;
+  }
+
+  .flagship-meta {
+    margin-top: 2rem;
+  }
+
+  .meta-list {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem 1.5rem;
+    padding-top: 0.75rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .meta-item {
+    min-width: 0;
+  }
+
+  .meta-value {
+    margin: 0.25rem 0 0;
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: 1.4;
+    color: var(--color-ink);
+  }
+
+  .meta-stack {
+    font-size: var(--text-meta);
+    line-height: 1.6;
+  }
+
+  .flagship-descriptor {
+    margin-top: 1.75rem;
+    font-size: var(--text-body);
+    line-height: 1.6;
+    color: var(--color-graphite-text);
+    max-width: 46ch;
+  }
+
+  .flagship-link {
+    margin-top: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .flagship-number {
+      grid-column: 1 / span 1;
+    }
+
+    .flagship-headline {
+      grid-column: 2 / span 11;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .flagship-headline {
+      grid-column: 2 / span 9;
+    }
+
+    .flagship-media {
+      grid-column: 1 / span 8;
+    }
+
+    .flagship-meta {
+      grid-column: 9 / span 4;
+      margin-top: 0;
+    }
+
+    .meta-list {
+      grid-template-columns: 1fr;
+      gap: 1.125rem;
+    }
+  }
+</style>
