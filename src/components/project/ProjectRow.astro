@@ -131,7 +131,7 @@ const number = String(order).padStart(2, '0');
     /* Capped deliberately. "GEOCOUNTERFACTUAL" is a single 17-character word
        that cannot wrap, so the scale must let it fit its column at every
        breakpoint. break-word is the safety net, not the plan. */
-    font-size: clamp(1.5rem, 3.4vw, 2.5rem);
+    font-size: var(--text-index);
     text-transform: uppercase;
     overflow-wrap: break-word;
   }

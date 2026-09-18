@@ -76,7 +76,7 @@ const skills = (await getCollection('skills')).sort((a, b) => a.data.order - b.d
   }
 
   .profile-headline {
-    font-size: clamp(2rem, 4.6vw, 3.75rem);
+    font-size: var(--text-headline);
     max-width: 18ch;
   }
 

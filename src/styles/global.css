@@ -51,12 +51,37 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* --- Type scale (DESIGN_SYSTEM §05, desktop) --------------------------
-     Mobile overrides live in the media query below. Body never shrinks. */
-  --text-hero: clamp(4.5rem, 10vw, 10rem);
-  --text-hero-positioning: clamp(2rem, 4vw, 4.5rem);
-  --text-section: clamp(3rem, 7vw, 7rem);
-  --text-project: clamp(2.5rem, 5vw, 5.5rem);
-  --text-statement: clamp(3rem, 7vw, 8rem);
+     Mobile overrides live in the media query below. Body never shrinks.
+
+     §05 gives its numbers as "starting values, not immutable numbers, to be
+     tuned after actual font selection". These are that tuning, and the tuning
+     was about hierarchy rather than size: the starting scale put section
+     headings at 70% of the hero name, which made them compete with it, and
+     left every section to invent its own heading size (seven sections, seven
+     different clamps, 60px to 101px at 1440). What follows is one ladder that
+     every display element picks a rung from.
+
+     At 1440, the rungs are:
+
+       hero        130   the name, and nothing else on the site is this size
+       statement    86   one editorial break, once, in the profile section
+       section      78   a section opener: a few words
+       project      58   a project title
+       headline     56   a sentence at display scale, so smaller than a
+                         section opener despite ranking alongside it
+       index        36   a row in an index: projects, experience, prev/next
+       deck         32   a thesis or standfirst line under a title
+
+     Archivo is a fairly narrow grotesque, so these sit a little lower than a
+     wider face would need at the same visual weight. */
+  --text-hero: clamp(4.25rem, 9vw, 8.5rem);
+  --text-hero-positioning: clamp(1.5rem, 3vw, 2.5rem);
+  --text-statement: clamp(2.75rem, 6vw, 6rem);
+  --text-section: clamp(2.75rem, 5.4vw, 5rem);
+  --text-project: clamp(2.5rem, 4vw, 4rem);
+  --text-headline: clamp(2rem, 4vw, 3.5rem);
+  --text-index: clamp(1.375rem, 3vw, 2.25rem);
+  --text-deck: clamp(1.1875rem, 2.4vw, 2rem);
   --text-body: 1rem;
   --text-body-lg: 1.125rem;
   --text-meta: 0.8125rem;
@@ -71,10 +96,17 @@
   --space-section: clamp(5rem, 12vw, 12rem);
   --space-section-sm: clamp(3rem, 8vw, 6rem);
 
+  /* Height of the sticky navigation bar. Declared here rather than only in
+     SiteNav.astro because anchor targets have to offset themselves by it, and
+     the two must not drift apart. */
+  --nav-height: 3.5rem;
+
   /* --- Rules and shape (DESIGN_SYSTEM §08, §09) ------------------------- */
   --border-thin: 1px;
+  /* One radius. DESIGN_SYSTEM §09 permits buttons anywhere in a 0-8px range;
+     the system settled on 2px and uses it everywhere, so the second token sat
+     unused and only invited a radius the design does not actually use. */
   --radius-sm: 2px;
-  --radius-md: 8px;
 
   /* --- Motion (DESIGN_SYSTEM §27, §34) ----------------------------------
      Four durations, two easings. Components pick from these rather than
@@ -99,13 +131,21 @@
 }
 
 /* Mobile type scale (DESIGN_SYSTEM §05). Display sizes change; body does not.
-   The old site dropped the root to 12px on phones; that must never recur. */
+   The old site dropped the root to 12px on phones; that must never recur.
+
+   Each cap here is the value the desktop curve above produces at 769px, so
+   nothing jumps or reverses as the breakpoint is crossed. That was a real
+   defect before this pass: the old mobile project-title cap (4rem) was larger
+   than the desktop curve's output at 1024px (3.2rem), so a project title
+   visibly SHRANK as the window was widened past 768px. */
 @media (max-width: 768px) {
   :root {
-    --text-hero: clamp(3.25rem, 17vw, 5rem);
-    --text-section: clamp(2.5rem, 13vw, 4rem);
-    --text-project: clamp(2.25rem, 12vw, 4rem);
-    --text-statement: clamp(2.5rem, 13vw, 4rem);
+    --text-hero: clamp(3.25rem, 17vw, 4.25rem);
+    --text-statement: clamp(2.25rem, 11vw, 2.75rem);
+    --text-section: clamp(2.25rem, 11vw, 2.75rem);
+    --text-project: clamp(2.25rem, 10vw, 2.5rem);
+    --text-headline: clamp(1.75rem, 8vw, 2rem);
+    --text-index: clamp(1.25rem, 6vw, 1.5rem);
   }
 }
 
@@ -198,6 +238,34 @@
 
   /* Only remove the default ring where :focus-visible replaces it. */
   :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Anchor landing offset.
+
+     The navigation is sticky, so an anchored element scrolled to y=0 has its
+     first 57px covered by it: every in-page link, the skip link included,
+     landed with the section label hidden behind the bar. `scroll-margin-top`
+     fixes that in the browser's own scrolling, which means no scroll
+     handler, no hijacking and no JavaScript of any kind. The extra 1.5rem is
+     breathing room so the label does not sit flush against the rule. */
+  main section[id],
+  #main,
+  :target {
+    scroll-margin-top: calc(var(--nav-height) + var(--border-thin) + 1.5rem);
+  }
+
+  /* The skip link's target carries tabindex="-1" so it can take focus: without
+     it the browser scrolled to <main> but left focus on <body>, and the next
+     Tab restarted from the top of the document, which defeats the point of a
+     skip link.
+
+     Focusing <main> does match :focus-visible, so the shared focus ring would
+     otherwise draw a 2px outline around the entire page. The outline is
+     dropped here and nowhere else: <main> is a programmatic focus target
+     rather than a control, the scroll itself confirms the jump happened, and
+     the next Tab lands on a real control that shows its own ring. */
+  #main:focus {
     outline: none;
   }
 
@@ -416,12 +484,23 @@
     row-gap: var(--grid-gap);
   }
 
+  /* Section rhythm is owned by the top edge alone.
+     With padding on both edges, the whitespace between two sections was the
+     sum of two independent values, and nobody had chosen the sum: the gaps
+     down the homepage measured 173, 346, 346, 269, 269, 269, 269 and 213px at
+     1440. Every one of those was an accident of adjacency.
+     Top-only padding makes the gap between any two sections exactly the
+     incoming section's own value, so --space-section finally means the thing
+     it is named after. A compact section then reads as sitting closer to what
+     came before it, which is what "compact" should mean here. The footer
+     carries its own leading space so the last section is not left flush
+     against it. */
   .section-pad {
-    padding-block: var(--space-section);
+    padding-block: var(--space-section) 0;
   }
 
   .section-pad-sm {
-    padding-block: var(--space-section-sm);
+    padding-block: var(--space-section-sm) 0;
   }
 
   /* Monospace metadata. The workhorse of the technical-editorial voice. */
@@ -552,6 +631,18 @@
     background-color: var(--color-paper-soft);
     border: var(--border-thin) solid var(--color-graphite-rule);
     overflow: hidden;
+    /* A declared ratio reserves the shape the real figure will have, which is
+       the point of the plate. It should not also reserve the full height of a
+       figure that does not exist: at 1440 a 16/10 hero plate stood 494px tall
+       and empty, out-weighing the writing around it. Real images are
+       unaffected; this caps the placeholder only.
+
+       `width: 100%` is required alongside it: with only max-height, the box
+       honours its aspect-ratio by narrowing as well as shortening, and the
+       plate stopped filling its column while the figcaption rule beneath it
+       still ran the full width. */
+    width: 100%;
+    max-height: 26rem;
   }
 
   .plate::before,
@@ -739,11 +830,6 @@
   .form-status-error {
     border-top: var(--border-thin) solid var(--color-oxide-rule);
     color: var(--color-oxide-text);
-  }
-
-  .form-status-success {
-    border-top: var(--border-thin) solid var(--color-graphite-rule);
-    color: var(--color-ink);
   }
 
   /* Success replaces the field grid entirely: showing a form full of

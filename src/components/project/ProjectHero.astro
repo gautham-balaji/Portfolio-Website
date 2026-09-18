@@ -167,12 +167,16 @@ const number = String(order).padStart(2, '0');
   .hero-thesis {
     font-family: var(--font-display);
     font-weight: 500;
-    font-size: clamp(1.25rem, 2.8vw, 2.125rem);
+    font-size: var(--text-deck);
     line-height: 1.2;
     letter-spacing: -0.015em;
     text-wrap: balance;
     margin-top: clamp(1.25rem, 3vw, 2rem);
-    max-width: 26ch;
+    /* Widened from 26ch: at 26 the thesis broke into four short lines, which
+       reads as a landing-page slogan stacked up rather than the standfirst of
+       a technical article (§16). A longer measure gives it two or three full
+       lines. */
+    max-width: 34ch;
   }
 
   .hero-meta {
@@ -194,6 +198,17 @@ const number = String(order).padStart(2, '0');
     font-size: var(--text-body);
     line-height: 1.4;
     color: var(--color-ink);
+  }
+
+  /* The repository link is the only control in this rail, and as bare inline
+     text it measured 20px tall: under WCAG 2.2's 24px minimum and well under
+     the 44px this site sets itself (DESIGN_SYSTEM §33). It stays visually an
+     editorial underlined link; the target around it just grows to a real
+     size. */
+  .meta-value a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
 
   .meta-stack {

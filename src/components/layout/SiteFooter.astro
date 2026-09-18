@@ -51,7 +51,10 @@ const links = [
 
 <style>
   .site-footer {
-    padding-block: 2.5rem 3rem;
+    /* The leading space is a full section's worth because sections no longer
+       carry bottom padding: this is what separates the last of them from the
+       footer, and it keeps the page's rhythm unbroken all the way down. */
+    padding-block: var(--space-section) 3rem;
   }
 
   .footer-grid {

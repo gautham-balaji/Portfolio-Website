@@ -93,9 +93,14 @@ const plateLabel = `Figure ${number} placeholder. ${kindLabel}: ${caption} Not y
     </div>
   ) : (
     <div class="plate" style={`aspect-ratio: ${ratio};`} role="img" aria-label={plateLabel}>
+      {/* The caption is deliberately NOT repeated here. It already sits in the
+          figcaption immediately below, and printing it twice made an empty
+          placeholder read as the loudest thing on the page. What is left is
+          what the plate alone has to say: which figure this is, and that its
+          evidence does not exist yet. The full sentence still reaches
+          assistive technology through `aria-label`. */}
       <div class="plate-body" aria-hidden="true">
         <p class="label label-ink">FIG. {number}</p>
-        <p class="plate-caption">{caption}</p>
         <p class="label plate-status">{kindLabel} / not yet captured</p>
       </div>
     </div>

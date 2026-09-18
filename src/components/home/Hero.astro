@@ -125,7 +125,12 @@ import { RESUME_AVAILABLE, RESUME_PATH } from '@/lib/site';
   }
 
   .hero {
-    padding-block: clamp(2.5rem, 7vw, 5.5rem) clamp(2.5rem, 6vw, 4.5rem);
+    /* Bottom padding is 0 on purpose. Selected Work opens with a full
+       --space-section of its own, and the hero adding 4.5rem on top of that
+       left ~245px of unowned air under the metadata rule at 1440. The gap
+       below the hero is now exactly one section's rhythm, like every other
+       boundary on the page. */
+    padding-block: clamp(2.5rem, 7vw, 5.5rem) 0;
   }
 
   .hero-grid {
@@ -152,12 +157,12 @@ import { RESUME_AVAILABLE, RESUME_PATH } from '@/lib/site';
   .hero-positioning {
     font-family: var(--font-display);
     font-weight: 500;
-    font-size: clamp(1.5rem, 3.2vw, 2.75rem);
+    font-size: var(--text-hero-positioning);
     line-height: 1.1;
     letter-spacing: -0.015em;
     text-wrap: balance;
     margin-top: clamp(1.25rem, 3vw, 2rem);
-    max-width: 20ch;
+    max-width: 24ch;
   }
 
   .hero-supporting {

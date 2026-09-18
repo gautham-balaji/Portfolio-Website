@@ -84,11 +84,32 @@ const projects = (await getCollection('projects')).sort((a, b) => a.data.order -
     color: var(--color-graphite-text);
   }
 
+  /* Stacked first, side by side only once there is genuinely room.
+     These two controls need 332px and a 360px viewport offers 328px: a 4px
+     deficit. Laid out as a wrapping row they fitted on one line during first
+     paint with the fallback mono face, then wrapped when IBM Plex Mono
+     arrived slightly wider, dropping the project index and the footer 57px
+     down the page. That single reflow was the whole of this route's 0.096
+     CLS, and it was the only layout shift left on the site.
+
+     The fix is to take the layout off the knife edge rather than to chase the
+     font: below 400px the buttons stack from the first frame, so no face,
+     fallback or otherwise, can change the outcome. Above it there is 36px of
+     slack, which no metric difference is going to consume. */
   .actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 0.75rem;
     margin-top: clamp(2rem, 5vw, 3rem);
+  }
+
+  @media (min-width: 400px) {
+    .actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+    }
   }
 
   .index {

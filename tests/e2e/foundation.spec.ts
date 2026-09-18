@@ -30,6 +30,38 @@ test('the skip link is the first focusable element and becomes visible', async (
   await expect(focused).toHaveAttribute('href', '#main');
 });
 
+test('the skip link moves focus, not just the scroll position', async ({ page }) => {
+  // <main> carries tabindex="-1" for exactly this. Without it the browser
+  // scrolled to the landmark but left focus on <body>, so the next Tab
+  // restarted at the top of the document and the skip link achieved nothing
+  // for the keyboard user it exists to serve.
+  await page.goto('/');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('#main')).toBeFocused();
+});
+
+test('anchored sections land clear of the sticky navigation', async ({ page }) => {
+  // scroll-margin-top on the targets, so the browser does its own scrolling.
+  // Before it, every in-page link left the section label hidden behind the
+  // sticky bar.
+  for (const hash of ['#work', '#experience', '#about', '#contact']) {
+    await page.goto(`/${hash}`);
+    await page.waitForTimeout(300);
+
+    const { targetTop, navBottom } = await page.evaluate((selector) => {
+      const target = document.querySelector(selector)!.getBoundingClientRect();
+      const nav = document.querySelector('.site-nav')!.getBoundingClientRect();
+      return { targetTop: target.top, navBottom: nav.bottom };
+    }, hash);
+
+    expect(targetTop, `${hash} must not sit under the navigation`).toBeGreaterThanOrEqual(
+      navBottom,
+    );
+  }
+});
+
 test('focused elements have a visible focus indicator', async ({ page }) => {
   await page.goto('/');
   await page.keyboard.press('Tab');

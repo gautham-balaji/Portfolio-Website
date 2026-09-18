@@ -36,7 +36,7 @@ const earliestYear = Math.min(...projects.map((p) => p.data.year));
 ---
 
 <Section id="work" number="01" label="Selected Work">
-  <div class="intro" data-reveal>
+  <div class="grid-12 intro" data-reveal>
     <h2 class="display intro-heading">THINGS I'VE BUILT.</h2>
     <p class="intro-note label">
       {projects.length} PROJECTS / {earliestYear} &ndash; PRESENT
@@ -123,18 +123,34 @@ const earliestYear = Math.min(...projects.map((p) => p.data.year));
 </Section>
 
 <style>
+  /* `space-between` pushed the project count to the far edge, where it read as
+     floating: it sat wherever the heading happened to stop, which is a ragged
+     edge, not a line. On the grid it lands in a column instead, and the count
+     aligns with the metadata rail of the flagship block below it. */
   .intro {
-    display: flex;
-    flex-wrap: wrap;
     align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem 2rem;
+    row-gap: 1rem;
     margin-bottom: clamp(3rem, 8vw, 6rem);
   }
 
   .intro-heading {
+    grid-column: 1 / -1;
     font-size: var(--text-section);
     text-transform: uppercase;
+  }
+
+  .intro-note {
+    grid-column: 1 / -1;
+  }
+
+  @media (min-width: 1024px) {
+    .intro-heading {
+      grid-column: 1 / span 8;
+    }
+
+    .intro-note {
+      grid-column: 9 / span 4;
+    }
   }
 
   /* --- Flagship --- */
@@ -149,7 +165,7 @@ const earliestYear = Math.min(...projects.map((p) => p.data.year));
 
   .flagship-number {
     grid-column: 1 / -1;
-    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-size: var(--text-headline);
     line-height: 1;
     color: var(--color-oxide-text);
   }
@@ -166,7 +182,7 @@ const earliestYear = Math.min(...projects.map((p) => p.data.year));
   .flagship-thesis {
     font-family: var(--font-display);
     font-weight: 500;
-    font-size: clamp(1.25rem, 2.6vw, 2.125rem);
+    font-size: var(--text-deck);
     line-height: 1.15;
     letter-spacing: -0.015em;
     margin-top: clamp(0.875rem, 2vw, 1.25rem);

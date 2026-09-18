@@ -116,6 +116,18 @@ function init(): void {
   );
 
   for (const el of document.querySelectorAll('[data-reveal]')) {
+    // Anything the reader has already passed is put straight into its final
+    // state rather than observed. Loading at an anchor (/#contact), restoring
+    // a scroll position, or following an in-page link all start the page part
+    // way down, and an element above that point has no arrival left to
+    // animate: it would sit hidden until the reader happened to scroll back
+    // up, then fade in behind them. Reading position, not a timer, decides.
+    if (el.getBoundingClientRect().bottom < 0) {
+      el.classList.add('is-revealed');
+      const passedLabel = el.querySelector<HTMLElement>('[data-decrypt]');
+      if (passedLabel) passedLabel.removeAttribute('data-decrypt');
+      continue;
+    }
     observer.observe(el);
   }
 
@@ -136,6 +148,9 @@ function init(): void {
   );
 
   for (const label of looseLabels) {
+    // Same rule as the reveal targets above: a label the reader has already
+    // scrolled past is simply left as the real text.
+    if (label.getBoundingClientRect().bottom < 0) continue;
     labelObserver.observe(label);
   }
 }

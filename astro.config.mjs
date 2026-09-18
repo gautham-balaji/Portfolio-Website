@@ -17,7 +17,21 @@ export default defineConfig({
   output: 'static',
   adapter: vercel(),
 
-  integrations: [react(), sitemap()],
+  integrations: [
+    react(),
+    // The sitemap emits trailing slashes by default, while `absoluteUrl()` in
+    // src/lib/seo.ts strips them from every canonical. That left the two
+    // disagreeing about the address of the same page
+    // (/projects/vera/ against /projects/vera), which is exactly the kind of
+    // mixed signal canonicals exist to prevent. The canonical form wins here;
+    // the site root keeps its slash because that is its canonical form too.
+    sitemap({
+      serialize: (item) => ({
+        ...item,
+        url: item.url.length > SITE.length + 1 ? item.url.replace(/\/$/, '') : item.url,
+      }),
+    }),
+  ],
 
   vite: {
     plugins: [tailwindcss()],

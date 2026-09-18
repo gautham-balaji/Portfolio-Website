@@ -248,3 +248,29 @@ test.describe('/404', () => {
     await expect(page.locator('.index-link')).toHaveCount(4);
   });
 });
+
+test.describe('/404 layout stability', () => {
+  test('keeps its two calls to action off the wrap threshold at 360px', async ({
+    browser,
+  }) => {
+    // Regression guard for the site's last real layout shift. At 360px the two
+    // buttons need 332px of a 328px line: laid out as a wrapping row they fitted
+    // during first paint with the fallback mono face, then wrapped when IBM Plex
+    // Mono arrived fractionally wider, dropping the project index and footer 57px
+    // and costing 0.096 CLS. Below 400px they are stacked from the first frame,
+    // so no font can change the outcome.
+    const context = await browser.newContext({ viewport: { width: 360, height: 900 } });
+    const page = await context.newPage();
+    await page.goto('/404');
+    await page.evaluate(() => document.fonts.ready);
+
+    const tops = await page
+      .locator('.actions .btn')
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+
+    expect(tops).toHaveLength(2);
+    expect(tops[0], 'the controls must be stacked, not side by side').not.toBe(tops[1]);
+
+    await context.close();
+  });
+});
