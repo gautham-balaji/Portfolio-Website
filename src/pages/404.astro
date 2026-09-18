@@ -1,0 +1,169 @@
+---
+/**
+ * 404 (MASTER_CONTENT.md §20).
+ *
+ * Copy is used verbatim. The page keeps the site layout so a lost visitor can
+ * still navigate, and lists the four projects because a stale project URL is
+ * the most likely way to arrive here.
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import SiteNav from '@/components/layout/SiteNav.astro';
+import SiteFooter from '@/components/layout/SiteFooter.astro';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+---
+
+<BaseLayout title="404" description="This page doesn't exist." path="/404" noindex>
+  <SiteNav slot="header" />
+
+  <section class="notfound" aria-labelledby="notfound-heading">
+    <div class="container">
+      <p class="label code">Error / 404</p>
+
+      <h1 id="notfound-heading" class="display heading">
+        404
+      </h1>
+
+      <p class="message">This page doesn't exist.</p>
+      <p class="sub">You can go back to the work.</p>
+
+      <div class="actions">
+        <a href="/" class="btn btn-primary">
+          Back to home
+        </a>
+        <a href="/#work" class="btn btn-secondary">
+          Selected work
+        </a>
+      </div>
+
+      <div class="index">
+        <hr class="rule" />
+        <p class="label index-label">Projects</p>
+        <ul class="index-list">
+          {projects.map((project) => (
+            <li class="index-item">
+              <a href={`/projects/${project.id}`} class="index-link">
+                <span class="label index-number">
+                  {String(project.data.order).padStart(2, '0')}
+                </span>
+                <span class="index-title">{project.data.title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <SiteFooter slot="footer" />
+</BaseLayout>
+
+<style>
+  .notfound {
+    padding-block: clamp(3rem, 10vw, 7rem);
+  }
+
+  .heading {
+    font-size: clamp(4rem, 16vw, 10rem);
+    margin-top: clamp(1rem, 3vw, 1.5rem);
+    line-height: 0.9;
+  }
+
+  .message {
+    margin-top: clamp(1.5rem, 4vw, 2.25rem);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.25rem, 3vw, 2rem);
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    margin-top: 0.75rem;
+    font-size: var(--text-body-lg);
+    color: var(--color-graphite-text);
+  }
+
+  /* Stacked first, side by side only once there is genuinely room.
+     These two controls need 332px and a 360px viewport offers 328px: a 4px
+     deficit. Laid out as a wrapping row they fitted on one line during first
+     paint with the fallback mono face, then wrapped when IBM Plex Mono
+     arrived slightly wider, dropping the project index and the footer 57px
+     down the page. That single reflow was the whole of this route's 0.096
+     CLS, and it was the only layout shift left on the site.
+
+     The fix is to take the layout off the knife edge rather than to chase the
+     font: below 400px the buttons stack from the first frame, so no face,
+     fallback or otherwise, can change the outcome. Above it there is 36px of
+     slack, which no metric difference is going to consume. */
+  .actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-top: clamp(2rem, 5vw, 3rem);
+  }
+
+  @media (min-width: 400px) {
+    .actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+  }
+
+  .index {
+    margin-top: clamp(3.5rem, 9vw, 6rem);
+  }
+
+  .index-label {
+    margin-top: 0.875rem;
+    color: var(--color-oxide-text);
+  }
+
+  .index-list {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    display: grid;
+  }
+
+  .index-item {
+    border-top: var(--border-thin) solid var(--color-paper-soft);
+  }
+
+  .index-link {
+    display: flex;
+    align-items: baseline;
+    gap: 1.25rem;
+    min-height: 48px;
+    padding-block: 0.75rem;
+    text-decoration: none;
+    color: var(--color-ink);
+  }
+
+  .index-link:hover .index-title {
+    color: var(--color-oxide-text);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  .index-number {
+    color: var(--color-graphite-text);
+  }
+
+  .index-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.125rem, 2.4vw, 1.5rem);
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  @media (min-width: 768px) {
+    .index-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--grid-gap);
+    }
+  }
+</style>

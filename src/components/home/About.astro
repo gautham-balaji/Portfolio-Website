@@ -1,0 +1,105 @@
+---
+/**
+ * 04 / ABOUT (DESIGN_SYSTEM.md §19; MASTER_CONTENT.md §14).
+ *
+ * Deliberately the smallest narrative section. Large ABOUT on the left, short
+ * personal copy on the right, three metadata pairs beneath.
+ *
+ * The copy is used verbatim. §14 warns against turning this into a resume
+ * biography, and §03 bans recruiter phrasing.
+ */
+import Section from '@/components/layout/Section.astro';
+import { ABOUT } from '@/lib/copy';
+---
+
+<Section id="about" number="04" label="About" compact>
+  <div class="grid-12 about-grid" data-reveal>
+    <h2 class="display about-title">ABOUT</h2>
+
+    <div class="about-body">
+      {ABOUT.body.map((paragraph) => (
+        <p class="about-para">{paragraph}</p>
+      ))}
+    </div>
+
+    <dl class="about-meta">
+      {ABOUT.meta.map((item) => (
+        <div class="about-meta-item">
+          <dt class="label">{item.key}</dt>
+          <dd class="label about-meta-value">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+</Section>
+
+<style>
+  .about-grid {
+    align-items: start;
+  }
+
+  .about-title,
+  .about-body,
+  .about-meta {
+    grid-column: 1 / -1;
+  }
+
+  .about-title {
+    font-size: var(--text-section);
+  }
+
+  .about-body {
+    display: grid;
+    gap: 1.125rem;
+    max-width: 56ch;
+  }
+
+  .about-para {
+    font-size: var(--text-body-lg);
+    line-height: 1.6;
+  }
+
+  .about-para:not(:first-child) {
+    color: var(--color-graphite-text);
+    font-size: var(--text-body);
+  }
+
+  .about-meta {
+    margin: clamp(2.5rem, 5vw, 3.5rem) 0 0;
+    padding-top: 1rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+    display: grid;
+    gap: 1rem 2rem;
+  }
+
+  .about-meta-item {
+    display: flex;
+    gap: 0.75ch;
+    align-items: baseline;
+  }
+
+  .about-meta-value {
+    margin: 0;
+    color: var(--color-ink);
+  }
+
+  @media (min-width: 640px) {
+    .about-meta {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .about-title {
+      grid-column: 1 / span 4;
+    }
+
+    .about-body {
+      grid-column: 6 / span 6;
+    }
+
+    .about-meta {
+      grid-column: 6 / span 6;
+    }
+  }
+</style>

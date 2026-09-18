@@ -1,0 +1,184 @@
+---
+/**
+ * Contact (DESIGN_SYSTEM.md §22, §48; MASTER_CONTENT.md §18).
+ *
+ * Left: the CTA, a large email link, and the three destinations.
+ * Right: the form.
+ *
+ * The form itself is <ContactForm client:visible />, a React island: it is
+ * the ONLY hydrated component on the homepage. Astro server-renders the
+ * island's real, complete <form action="/api/contact" method="post"> into the
+ * static page regardless of whether the visitor's browser ever runs
+ * JavaScript, so the form is never inert (MASTER_CONTENT.md §18) even before
+ * hydration. See the module comment in ContactForm.tsx for the full
+ * progressive-enhancement contract, including why `startedAt` is added by the
+ * island rather than baked into this static page.
+ *
+ * Field/status/error styling lives in src/styles/global.css (.contact-form,
+ * .field, .form-status, etc.) rather than in this file's scoped <style>,
+ * because a .tsx component has no scoped style block of its own and both the
+ * island and (for anyone reading raw HTML with CSS but no JS) this page's own
+ * markup need the same classes.
+ */
+import ContactForm from '@/components/home/ContactForm';
+import { CONTACT } from '@/lib/copy';
+import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
+---
+
+<section id="contact" class="contact section-pad" aria-labelledby="contact-heading">
+  <div class="container">
+    <hr class="rule rule-ink" />
+
+    <div class="grid-12 contact-grid">
+      <div class="contact-lead" data-reveal>
+        <h2 id="contact-heading" class="display contact-heading">
+          {CONTACT.heading}
+        </h2>
+
+        <p class="contact-supporting">{CONTACT.supporting}</p>
+
+        <a href={`mailto:${SITE.email}`} class="contact-email">
+          {SITE.email}
+        </a>
+
+        <ul class="contact-links">
+          <li>
+            <a
+              href={SITE.github}
+              class="contact-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+            </a>
+          </li>
+          <li>
+            <a
+              href={SITE.linkedin}
+              class="contact-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              LinkedIn
+            </a>
+          </li>
+          <li>
+            {RESUME_AVAILABLE ? (
+              <a href={RESUME_PATH} class="contact-link" download>
+                Resume
+              </a>
+            ) : (
+              <span class="contact-link is-unavailable">Resume coming soon</span>
+            )}
+          </li>
+        </ul>
+      </div>
+
+      <div class="contact-form-wrap">
+        <ContactForm client:visible />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .contact-grid {
+    align-items: start;
+    padding-top: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .contact-lead,
+  .contact-form-wrap {
+    grid-column: 1 / -1;
+  }
+
+  .contact-heading {
+    font-size: var(--text-section);
+    text-transform: uppercase;
+    max-width: 16ch;
+  }
+
+  .contact-supporting {
+    margin-top: clamp(1.25rem, 3vw, 1.75rem);
+    font-size: var(--text-body-lg);
+    line-height: 1.55;
+    color: var(--color-graphite-text);
+    max-width: 46ch;
+  }
+
+  .contact-email {
+    /* Flex with a min-height so the primary contact action clears the 44px
+       target rule even at the smallest type size (§33). */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: clamp(1.75rem, 4vw, 2.5rem);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: var(--text-deck);
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--color-oxide-rule);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.22em;
+    word-break: break-word;
+    transition: text-decoration-thickness var(--motion-fast) var(--ease-standard);
+  }
+
+  .contact-email:hover {
+    text-decoration-thickness: 3px;
+  }
+
+  .contact-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.75rem;
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+  }
+
+  .contact-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--color-graphite-rule);
+    text-underline-offset: 0.3em;
+    transition:
+      text-decoration-color var(--motion-fast) var(--ease-standard),
+      text-decoration-thickness var(--motion-fast) var(--ease-standard);
+  }
+
+  .contact-link:hover {
+    text-decoration-color: var(--color-oxide-rule);
+    text-decoration-thickness: 2px;
+  }
+
+  .is-unavailable {
+    color: var(--color-graphite-text);
+    text-decoration: none;
+    cursor: default;
+  }
+
+  .contact-form-wrap {
+    margin-top: clamp(3rem, 7vw, 0);
+  }
+
+  @media (min-width: 1024px) {
+    .contact-lead {
+      grid-column: 1 / span 6;
+    }
+
+    .contact-form-wrap {
+      grid-column: 8 / span 5;
+      margin-top: 0;
+    }
+  }
+</style>

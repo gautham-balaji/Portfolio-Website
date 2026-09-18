@@ -1,0 +1,41 @@
+[
+  {
+    "id": "languages",
+    "category": "Languages",
+    "order": 1,
+    "items": ["Python", "C++", "Java", "SQL", "JavaScript"]
+  },
+  {
+    "id": "ai-agentic-systems",
+    "category": "AI & Agentic Systems",
+    "order": 2,
+    "items": [
+      "LangChain",
+      "Microsoft AutoGen",
+      "RAG",
+      "LLM Agents",
+      "Tool Orchestration",
+      "Prompt Engineering"
+    ]
+  },
+  {
+    "id": "backend-full-stack",
+    "category": "Backend & Full Stack",
+    "order": 3,
+    "items": ["FastAPI", "Flask", "React", "JWT Authentication"]
+  },
+  {
+    "id": "tools-platforms",
+    "category": "Tools & Platforms",
+    "order": 4,
+    "items": [
+      "Git",
+      "GitHub",
+      "GitHub Actions",
+      "Hugging Face Spaces",
+      "Docker",
+      "Kubernetes",
+      "PostgreSQL"
+    ]
+  }
+]

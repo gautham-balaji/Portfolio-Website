@@ -1,0 +1,99 @@
+---
+/**
+ * Verified measurements.
+ *
+ * Each value is rendered with its qualifier attached, never as a bare number.
+ * MASTER_CONTENT.md §23 requires that 0.506 reads as a Pearson correlation and
+ * not an accuracy figure, and that GeoCounterfactual's runtime is not presented
+ * as a performance result. Keeping the note beside the value is what stops the
+ * layout from quietly making a claim the content does not.
+ *
+ * A definition list, not a stat-tile row: these are measurements in a technical
+ * document, not headline numbers on a marketing page.
+ */
+interface Metric {
+  label: string;
+  value: string;
+  note?: string | undefined;
+}
+
+interface Props {
+  metrics: Metric[];
+  heading?: string;
+}
+
+const { metrics, heading = 'Measurements' } = Astro.props;
+---
+
+<div class="metrics">
+  <p class="label metrics-heading">{heading}</p>
+
+  <dl class="metrics-list">
+    {metrics.map((metric) => (
+      <div class="metric">
+        <dt class="metric-label">{metric.label}</dt>
+        <dd class="metric-value">{metric.value}</dd>
+        {metric.note && <dd class="metric-note">{metric.note}</dd>}
+      </div>
+    ))}
+  </dl>
+</div>
+
+<style>
+  .metrics {
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .metrics-heading {
+    color: var(--color-oxide-text);
+  }
+
+  .metrics-list {
+    margin: 1.25rem 0 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .metric {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 1.5rem;
+    padding-block: 1rem;
+    border-top: var(--border-thin) solid var(--color-paper-soft);
+  }
+
+  .metric:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .metric-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-graphite-text);
+  }
+
+  .metric-value {
+    margin: 0;
+    grid-column: 2;
+    grid-row: 1;
+    font-family: var(--font-mono);
+    font-size: clamp(1.125rem, 2vw, 1.5rem);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .metric-note {
+    margin: 0;
+    grid-column: 1 / -1;
+    font-size: var(--text-meta);
+    line-height: 1.5;
+    color: var(--color-graphite-text);
+    max-width: 60ch;
+  }
+</style>

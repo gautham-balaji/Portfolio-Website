@@ -1,0 +1,19 @@
+dist/
+.astro/
+.vercel/
+node_modules/
+playwright-report/
+test-results/
+coverage/
+package-lock.json
+
+# Specification documents are a project contract. Never reformat them.
+MASTER_CONTENT.md
+DESIGN_SYSTEM.md
+REBUILD_PLAN.md
+gautham_portfolio_master_content_design.md
+
+# Legacy implementation, pending removal in a later phase.
+index.html
+styles.css
+script.js

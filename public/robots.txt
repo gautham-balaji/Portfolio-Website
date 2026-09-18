@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gautham-balaji.vercel.app/sitemap-index.xml

@@ -1,0 +1,191 @@
+---
+/**
+ * Project figure.
+ *
+ * One component for all project media. It renders a real image when one exists
+ * and an editorial plate when one does not, so a page can declare what evidence
+ * belongs where before the asset is captured. Dropping in `src` and `alt` later
+ * changes nothing about the layout.
+ *
+ * `kind` is always shown as a visible label. An architecture diagram must never
+ * be mistaken for a screenshot of a running application, which matters most for
+ * VERA and Legal NLP where diagrams stand in for software that is not publicly
+ * deployed.
+ *
+ * No project has media yet (REBUILD_PLAN gaps 1, 7-14). Fabricating any of it
+ * is forbidden.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  /** Figure number. Rendered as "FIG. 01". */
+  figure: string | number;
+  /** What the figure shows, or will show. Used as the caption. */
+  caption: string;
+  /** Shown as a label so the reader knows what they are looking at. */
+  kind?: 'screenshot' | 'diagram' | 'chart' | 'map';
+  /** Grid width within the project column. */
+  span?: 'full' | 'wide' | 'half';
+  src?: ImageMetadata;
+  /** Required whenever `src` is supplied. */
+  alt?: string;
+  /** CSS aspect-ratio for the frame. */
+  ratio?: string;
+  /** Provenance, e.g. which run produced the output. */
+  source?: string;
+  eager?: boolean;
+  widths?: number[];
+  sizes?: string;
+}
+
+const {
+  figure,
+  caption,
+  kind = 'screenshot',
+  span = 'wide',
+  src,
+  alt,
+  ratio = '16 / 10',
+  source,
+  eager = false,
+  widths = [480, 768, 1024, 1440],
+  sizes = '(min-width: 1024px) 60vw, 100vw',
+} = Astro.props;
+
+const number = String(figure).padStart(2, '0');
+
+const KIND_LABEL: Record<string, string> = {
+  screenshot: 'Screenshot',
+  diagram: 'Architecture diagram',
+  chart: 'Chart',
+  map: 'Satellite imagery',
+};
+
+const kindLabel = KIND_LABEL[kind] ?? 'Figure';
+
+/* Charts and diagrams carry precise content right to the edge (axis labels,
+   node text): cropping them with `cover` can cut that content off. Screenshots
+   and satellite imagery tolerate a cover crop without losing meaning. */
+const fitContain = kind === 'chart' || kind === 'diagram';
+
+/* The plate is decorative-with-meaning: it carries no information the caption
+   does not already state, so it is announced once rather than twice. */
+const plateLabel = `Figure ${number} placeholder. ${kindLabel}: ${caption} Not yet captured.`;
+---
+
+<figure class:list={['figure', `span-${span}`]}>
+  {Astro.slots.has('default') ? (
+    <div class="frame frame-custom" style={`aspect-ratio: ${ratio};`}>
+      <slot />
+    </div>
+  ) : src && alt ? (
+    <div class="frame" style={`aspect-ratio: ${ratio};`}>
+      <Image
+        src={src}
+        alt={alt}
+        widths={widths}
+        sizes={sizes}
+        loading={eager ? 'eager' : 'lazy'}
+        fetchpriority={eager ? 'high' : 'auto'}
+        class:list={['frame-image', { 'is-contain': fitContain }]}
+      />
+    </div>
+  ) : (
+    <div class="plate" style={`aspect-ratio: ${ratio};`} role="img" aria-label={plateLabel}>
+      {/* The caption is deliberately NOT repeated here. It already sits in the
+          figcaption immediately below, and printing it twice made an empty
+          placeholder read as the loudest thing on the page. What is left is
+          what the plate alone has to say: which figure this is, and that its
+          evidence does not exist yet. The full sentence still reaches
+          assistive technology through `aria-label`. */}
+      <div class="plate-body" aria-hidden="true">
+        <p class="label label-ink">FIG. {number}</p>
+        <p class="label plate-status">{kindLabel} / not yet captured</p>
+      </div>
+    </div>
+  )}
+
+  <figcaption class="figcap">
+    <span class="label label-ink figcap-num">FIG. {number}</span>
+    {/* label-oxide so the Soft Paper contrast guard applies: Oxide at this
+        size measures 4.50:1 on Soft Paper and misses AA. */}
+    <span class="label label-oxide figcap-kind">{kindLabel}</span>
+    <span class="figcap-text">{caption}</span>
+    {source && <span class="label figcap-source">{source}</span>}
+  </figcaption>
+</figure>
+
+<style>
+  .figure {
+    margin: 0;
+  }
+
+  .frame {
+    border: var(--border-thin) solid var(--color-ink);
+    background-color: var(--color-paper-soft);
+    overflow: hidden;
+  }
+
+  .frame-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .frame-image.is-contain {
+    object-fit: contain;
+  }
+
+  .frame-custom {
+    padding: clamp(0.75rem, 3vw, 1.5rem);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .plate-caption {
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    color: var(--color-ink);
+    line-height: 1.45;
+  }
+
+  .plate-status {
+    font-size: var(--text-meta-sm);
+    color: var(--color-graphite-text);
+  }
+
+  .figcap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem 1rem;
+    align-items: baseline;
+    margin-top: 0.75rem;
+    padding-top: 0.625rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .figcap-num {
+    flex: 0 0 auto;
+  }
+
+  /* Colour comes from .label-oxide, so the Soft Paper guard can override it. */
+  .figcap-kind {
+    flex: 0 0 auto;
+  }
+
+  .figcap-text {
+    flex: 1 1 22ch;
+    font-family: var(--font-body);
+    font-size: var(--text-meta);
+    line-height: 1.5;
+    color: var(--color-graphite-text);
+  }
+
+  .figcap-source {
+    flex: 1 1 100%;
+    color: var(--color-graphite-text);
+  }
+</style>

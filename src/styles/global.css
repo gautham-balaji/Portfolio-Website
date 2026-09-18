@@ -1,0 +1,865 @@
+/* ---------------------------------------------------------------------------
+   Global foundation.
+
+   Design tokens derive from DESIGN_SYSTEM.md with the contrast corrections
+   locked in for Phase 1. Components must consume tokens, never raw hex.
+
+   Fonts are self-hosted via Fontsource (bundled at build time), so the site
+   makes zero third-party font requests at runtime.
+   --------------------------------------------------------------------------- */
+
+@import 'tailwindcss';
+
+/* Display: Archivo Variable.
+   `wdth.css` is imported deliberately, NOT the package default. The default
+   entrypoint (index.css) ships the weight axis only; only `wdth.css` declares
+   `font-stretch: 62% 125%`. That width axis is what lets the hero Text Pressure
+   effect (DESIGN_SYSTEM §12) animate without layout shift. Do not change this
+   import to the bare package name. */
+@import '@fontsource-variable/archivo/wdth.css';
+
+/* Body: weight axis only. The body face has no need of a width axis. */
+@import '@fontsource-variable/ibm-plex-sans/wght.css';
+
+/* Technical: IBM Plex Mono has no variable release, so static weights.
+   Latin-only entrypoints keep the build output lean. */
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+
+@theme {
+  /* --- Colour (DESIGN_SYSTEM §03, with Phase 1 contrast corrections) ------
+     Two Graphite and two Oxide values exist deliberately:
+       *-text  passes WCAG AA (>= 4.5:1) on both Paper and Soft Paper
+       *-rule  is the original spec value, for borders, rules and large
+               display type only, where 3:1 applies
+     Using a *-rule value for small body or metadata text is a bug. */
+  --color-ink: #121212;
+  --color-paper: #e8e4dc;
+  --color-paper-soft: #dcd7cd;
+  --color-graphite-text: #5f5e5a;
+  --color-graphite-rule: #74736e;
+  --color-oxide-text: #934a2d;
+  --color-oxide-rule: #b85c38;
+
+  /* --- Typeface roles (DESIGN_SYSTEM §04) ------------------------------- */
+  --font-display:
+    'Archivo Variable', 'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+  --font-body:
+    'IBM Plex Sans Variable', 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* --- Type scale (DESIGN_SYSTEM §05, desktop) --------------------------
+     Mobile overrides live in the media query below. Body never shrinks.
+
+     §05 gives its numbers as "starting values, not immutable numbers, to be
+     tuned after actual font selection". These are that tuning, and the tuning
+     was about hierarchy rather than size: the starting scale put section
+     headings at 70% of the hero name, which made them compete with it, and
+     left every section to invent its own heading size (seven sections, seven
+     different clamps, 60px to 101px at 1440). What follows is one ladder that
+     every display element picks a rung from.
+
+     At 1440, the rungs are:
+
+       hero        130   the name, and nothing else on the site is this size
+       statement    86   one editorial break, once, in the profile section
+       section      78   a section opener: a few words
+       project      58   a project title
+       headline     56   a sentence at display scale, so smaller than a
+                         section opener despite ranking alongside it
+       index        36   a row in an index: projects, experience, prev/next
+       deck         32   a thesis or standfirst line under a title
+
+     Archivo is a fairly narrow grotesque, so these sit a little lower than a
+     wider face would need at the same visual weight. */
+  --text-hero: clamp(4.25rem, 9vw, 8.5rem);
+  --text-hero-positioning: clamp(1.5rem, 3vw, 2.5rem);
+  --text-statement: clamp(2.75rem, 6vw, 6rem);
+  --text-section: clamp(2.75rem, 5.4vw, 5rem);
+  --text-project: clamp(2.5rem, 4vw, 4rem);
+  --text-headline: clamp(2rem, 4vw, 3.5rem);
+  --text-index: clamp(1.375rem, 3vw, 2.25rem);
+  --text-deck: clamp(1.1875rem, 2.4vw, 2rem);
+  --text-body: 1rem;
+  --text-body-lg: 1.125rem;
+  --text-meta: 0.8125rem;
+  --text-meta-sm: 0.75rem;
+
+  /* --- Layout (DESIGN_SYSTEM §06) --------------------------------------- */
+  --container-max: 1600px;
+  --page-gutter: clamp(1rem, 4vw, 2.5rem);
+  --grid-gap: clamp(1rem, 2vw, 1.75rem);
+
+  /* --- Section rhythm (DESIGN_SYSTEM §07, 4px base) --------------------- */
+  --space-section: clamp(5rem, 12vw, 12rem);
+  --space-section-sm: clamp(3rem, 8vw, 6rem);
+
+  /* Height of the sticky navigation bar. Declared here rather than only in
+     SiteNav.astro because anchor targets have to offset themselves by it, and
+     the two must not drift apart. */
+  --nav-height: 3.5rem;
+
+  /* --- Rules and shape (DESIGN_SYSTEM §08, §09) ------------------------- */
+  --border-thin: 1px;
+  /* One radius. DESIGN_SYSTEM §09 permits buttons anywhere in a 0-8px range;
+     the system settled on 2px and uses it everywhere, so the second token sat
+     unused and only invited a radius the design does not actually use. */
+  --radius-sm: 2px;
+
+  /* --- Motion (DESIGN_SYSTEM §27, §34) ----------------------------------
+     Four durations, two easings. Components pick from these rather than
+     inventing values, so every transition on the site belongs to the same
+     system.
+
+       fast       pointer feedback: hover, press, focus
+       base       state changes that the reader is watching happen
+       reveal     one element entering the viewport
+       editorial  the hero's opening sequence, the slowest thing here
+
+     `standard` is decisive: it leaves immediately and decelerates into
+     place, which reads as controlled rather than floaty. `entrance` is a
+     longer tail for reveals. Neither overshoots: nothing on this site
+     bounces. */
+  --motion-fast: 120ms;
+  --motion-base: 220ms;
+  --motion-reveal: 560ms;
+  --motion-editorial: 620ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Mobile type scale (DESIGN_SYSTEM §05). Display sizes change; body does not.
+   The old site dropped the root to 12px on phones; that must never recur.
+
+   Each cap here is the value the desktop curve above produces at 769px, so
+   nothing jumps or reverses as the breakpoint is crossed. That was a real
+   defect before this pass: the old mobile project-title cap (4rem) was larger
+   than the desktop curve's output at 1024px (3.2rem), so a project title
+   visibly SHRANK as the window was widened past 768px. */
+@media (max-width: 768px) {
+  :root {
+    --text-hero: clamp(3.25rem, 17vw, 4.25rem);
+    --text-statement: clamp(2.25rem, 11vw, 2.75rem);
+    --text-section: clamp(2.25rem, 11vw, 2.75rem);
+    --text-project: clamp(2.25rem, 10vw, 2.5rem);
+    --text-headline: clamp(1.75rem, 8vw, 2rem);
+    --text-index: clamp(1.25rem, 6vw, 1.5rem);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Base elements and accessibility defaults.
+   --------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    /* Root stays 16px at every breakpoint. */
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100svh;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.05;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  /* Links inherit colour by default so section context decides emphasis.
+     Underline is kept, never removed without a stronger affordance. */
+  a {
+    color: inherit;
+    text-underline-offset: 0.2em;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  /* Form controls never fall below 16px: anything smaller triggers the
+     iOS focus-zoom the previous site suffered from. */
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    font-size: max(1rem, var(--text-body));
+    color: inherit;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* One focus style, defined once, applied everywhere.
+     Oxide rule on Paper is 3.58:1, which clears the 3:1 UI requirement. */
+  :focus-visible {
+    outline: 2px solid var(--color-oxide-rule);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Only remove the default ring where :focus-visible replaces it. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Anchor landing offset.
+
+     The navigation is sticky, so an anchored element scrolled to y=0 has its
+     first 57px covered by it: every in-page link, the skip link included,
+     landed with the section label hidden behind the bar. `scroll-margin-top`
+     fixes that in the browser's own scrolling, which means no scroll
+     handler, no hijacking and no JavaScript of any kind. The extra 1.5rem is
+     breathing room so the label does not sit flush against the rule. */
+  main section[id],
+  #main,
+  :target {
+    scroll-margin-top: calc(var(--nav-height) + var(--border-thin) + 1.5rem);
+  }
+
+  /* The skip link's target carries tabindex="-1" so it can take focus: without
+     it the browser scrolled to <main> but left focus on <body>, and the next
+     Tab restarted from the top of the document, which defeats the point of a
+     skip link.
+
+     Focusing <main> does match :focus-visible, so the shared focus ring would
+     otherwise draw a 2px outline around the entire page. The outline is
+     dropped here and nowhere else: <main> is a programmatic focus target
+     rather than a control, the scroll itself confirms the jump happened, and
+     the next Tab lands on a real control that shows its own ring. */
+  #main:focus {
+    outline: none;
+  }
+
+  ::selection {
+    background-color: var(--color-oxide-rule);
+    color: var(--color-paper);
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+}
+
+@layer components {
+  /* Skip link. First focusable element in the document; visible on focus.
+     DESIGN_SYSTEM §33. */
+  .skip-link {
+    position: absolute;
+    left: var(--page-gutter);
+    top: 0;
+    z-index: 100;
+    transform: translateY(-150%);
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.75rem 1rem;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    transition: transform var(--motion-base) var(--ease-standard);
+  }
+
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
+
+  /* Available to assistive technology, absent from the visual design.
+     Used where a decorative treatment temporarily replaces real text. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion (DESIGN_SYSTEM §34).
+
+   Content, layout and functional state changes are preserved. Only movement
+   is removed. Declared globally so no component can forget it.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Reveals are an enhancement, not a layout: if a reader has asked for
+     less motion, every element is simply at its final state from the
+     start. The entrance script also declines to run, so this is a second
+     guard rather than the only one. */
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Scroll reveal.
+
+   The hidden state is scoped to `html.js-reveal`, a class set by a small
+   synchronous script in the document head. That ordering matters: if the
+   hidden state lived on `[data-reveal]` unconditionally, a reader with
+   JavaScript disabled would get a page of invisible content, and a deferred
+   script would flash the content in before hiding it.
+
+   So: no JavaScript, no class, no hidden state, and the page reads exactly as
+   it does today. The same is true if the reveal script fails to load, because
+   it removes the class itself as a failsafe.
+   --------------------------------------------------------------------------- */
+.js-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  /* `filter` rides along because a reveal target may also be a hover target
+     (the project index rows are both). A component cannot add its own
+     `transition` shorthand for that without clobbering this one at equal
+     specificity, so the reveal system declares every property a reveal
+     target is allowed to animate, and components set values only. */
+  transition:
+    opacity var(--motion-reveal) var(--ease-entrance),
+    transform var(--motion-reveal) var(--ease-entrance),
+    filter var(--motion-base) var(--ease-standard);
+  /* Stagger, in units of one step. Set per element where a group should
+     arrive in sequence rather than together. */
+  transition-delay: calc(var(--reveal-index, 0) * 70ms);
+}
+
+.js-reveal [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Entrance.
+
+   Used by the two page openers (the homepage hero and the project hero),
+   which are above the fold and should not wait for a deferred module to
+   notice them. Pure CSS keyframes with `animation-fill-mode: both`, so this
+   runs with JavaScript disabled and collapses to nothing under reduced
+   motion via the block above.
+
+   Steps are 60ms apart and follow reading order, so the whole sequence is
+   finished inside a second and overlaps as little as possible with the work
+   the browser is doing to make the page interactive. Movement is 10px and
+   opacity; nothing scales or blurs, no step is unreadable, there is no
+   loader, and the page is interactive from the first paint -- a click that
+   lands at 200ms works normally.
+   --------------------------------------------------------------------------- */
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.enter {
+  animation: enter-rise var(--motion-editorial) var(--ease-entrance) both;
+  animation-delay: calc(var(--enter-index, 0) * 60ms);
+}
+
+/* A rule draws itself from the leading edge rather than fading in: the
+   gesture is the rule being ruled. */
+.js-reveal [data-reveal='rule'] {
+  transform: none;
+  transform-origin: left center;
+  scale: 0 1;
+  transition:
+    opacity var(--motion-base) var(--ease-standard),
+    scale var(--motion-reveal) var(--ease-standard);
+  transition-delay: calc(var(--reveal-index, 0) * 70ms);
+}
+
+.js-reveal [data-reveal='rule'].is-revealed {
+  scale: 1 1;
+}
+
+/* An architecture diagram resolves along its own flow: each stage settles in
+   sequence, each connector just after the stage it leaves. It is the one
+   place on the site where sequential motion carries information rather than
+   decoration, because the sequence IS the direction of the pipeline.
+
+   Opacity only, roughly 60ms per stage, once, on first sight. The finished
+   diagram is the static diagram: nothing animates on a loop, no path draws
+   itself, and the accessible text equivalent beside it is never hidden. */
+.js-reveal [data-reveal='diagram'] {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.js-reveal [data-reveal='diagram'] .arch-stage {
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--ease-standard);
+  transition-delay: calc(var(--stagger, 0) * 60ms);
+}
+
+.js-reveal [data-reveal='diagram'].is-revealed .arch-stage {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Editorial primitives.
+
+   A small, deliberate set of repeated structures: the page container, the
+   12-column grid, monospace labels, rules, buttons, and the figure plate used
+   where real project imagery does not exist yet.
+
+   Everything here consumes tokens. No raw hex, no ad-hoc sizes.
+   --------------------------------------------------------------------------- */
+
+@layer components {
+  .container {
+    width: 100%;
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: var(--page-gutter);
+  }
+
+  /* Twelve columns at every width. Children collapse to a full span on small
+     screens rather than the grid changing shape, which keeps span arithmetic
+     readable across breakpoints. */
+  .grid-12 {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--grid-gap);
+    row-gap: var(--grid-gap);
+  }
+
+  /* Section rhythm is owned by the top edge alone.
+     With padding on both edges, the whitespace between two sections was the
+     sum of two independent values, and nobody had chosen the sum: the gaps
+     down the homepage measured 173, 346, 346, 269, 269, 269, 269 and 213px at
+     1440. Every one of those was an accident of adjacency.
+     Top-only padding makes the gap between any two sections exactly the
+     incoming section's own value, so --space-section finally means the thing
+     it is named after. A compact section then reads as sitting closer to what
+     came before it, which is what "compact" should mean here. The footer
+     carries its own leading space so the last section is not left flush
+     against it. */
+  .section-pad {
+    padding-block: var(--space-section) 0;
+  }
+
+  .section-pad-sm {
+    padding-block: var(--space-section-sm) 0;
+  }
+
+  /* Monospace metadata. The workhorse of the technical-editorial voice. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-graphite-text);
+    margin: 0;
+  }
+
+  .label-ink {
+    color: var(--color-ink);
+  }
+
+  .label-oxide {
+    color: var(--color-oxide-text);
+  }
+
+  /* Display type. Tight, balanced, and always from the display face. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 0.94;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .rule {
+    border: 0;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+    margin: 0;
+  }
+
+  .rule-ink {
+    border-top-color: var(--color-ink);
+  }
+
+  /* --- Buttons -----------------------------------------------------------
+     Rectangular with a 2px radius. Hover inverts rather than glowing, and
+     never communicates state through colour alone: the border and the
+     background both change. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    /* 44px minimum target (DESIGN_SYSTEM §33). */
+    min-height: 44px;
+    padding: 0.6875rem 1.375rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: var(--border-thin) solid var(--color-ink);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition:
+      background-color var(--motion-fast) var(--ease-standard),
+      color var(--motion-fast) var(--ease-standard),
+      border-color var(--motion-fast) var(--ease-standard),
+      translate var(--motion-fast) var(--ease-standard);
+  }
+
+  /* Pressed state: one pixel down, no scale. A button that shrinks reads as
+     a toy; a button that takes the press reads as a control (§25). */
+  .btn:active {
+    translate: 0 1px;
+  }
+
+  /* The disabled resume control is not pressable, so it must not pretend. */
+  .btn.is-unavailable:active {
+    translate: none;
+  }
+
+  .btn-primary {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .btn-primary:hover {
+    background-color: transparent;
+    color: var(--color-ink);
+  }
+
+  .btn-secondary {
+    background-color: transparent;
+    color: var(--color-ink);
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  /* --- Links -------------------------------------------------------------
+     Underline is present at rest and thickens on hover, so interaction is
+     never signalled by colour alone. */
+  .link-editorial {
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--color-graphite-rule);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+    transition:
+      text-decoration-color var(--motion-fast) var(--ease-standard),
+      text-decoration-thickness var(--motion-fast) var(--ease-standard);
+  }
+
+  .link-editorial:hover {
+    text-decoration-color: var(--color-oxide-rule);
+    text-decoration-thickness: 2px;
+  }
+
+  /* --- Figure plate ------------------------------------------------------
+     Used where a real screenshot does not exist yet. Reads as a documentation
+     plate awaiting a figure, not as a broken image. Registration ticks in the
+     corners come from the surrounding frame, not from the content. */
+  .plate {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-paper-soft);
+    border: var(--border-thin) solid var(--color-graphite-rule);
+    overflow: hidden;
+    /* A declared ratio reserves the shape the real figure will have, which is
+       the point of the plate. It should not also reserve the full height of a
+       figure that does not exist: at 1440 a 16/10 hero plate stood 494px tall
+       and empty, out-weighing the writing around it. Real images are
+       unaffected; this caps the placeholder only.
+
+       `width: 100%` is required alongside it: with only max-height, the box
+       honours its aspect-ratio by narrowing as well as shortening, and the
+       plate stopped filling its column while the figcaption rule beneath it
+       still ran the full width. */
+    width: 100%;
+    max-height: 26rem;
+  }
+
+  .plate::before,
+  .plate::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: var(--color-graphite-rule);
+    border-style: solid;
+  }
+
+  .plate::before {
+    top: 8px;
+    left: 8px;
+    border-width: 1px 0 0 1px;
+  }
+
+  .plate::after {
+    bottom: 8px;
+    right: 8px;
+    border-width: 0 1px 1px 0;
+  }
+
+  .plate-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    align-items: center;
+    text-align: center;
+    padding: var(--grid-gap);
+    max-width: 34ch;
+  }
+
+  /* Figure caption sitting beneath a plate or image. */
+  .figcap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: baseline;
+    margin-top: 0.75rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Contact form.
+
+   Shared between the server-rendered fallback (no JS) and the React island
+   (src/components/home/ContactForm.tsx). Global classes rather than a scoped
+   Astro <style> block or CSS module, because a .tsx component has no scoped
+   style block of its own and the site's existing convention is one global
+   stylesheet of named editorial primitives (see .btn, .label, .plate above).
+   --------------------------------------------------------------------------- */
+@layer components {
+  .contact-form {
+    display: grid;
+    gap: 1.5rem;
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .form-key {
+    color: var(--color-oxide-text);
+  }
+
+  .field {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-graphite-text);
+  }
+
+  /* Editorial field: an underline, not a rounded pill (DESIGN_SYSTEM §48). */
+  .field-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.625rem 0.125rem;
+    background-color: transparent;
+    border: 0;
+    border-bottom: var(--border-thin) solid var(--color-graphite-rule);
+    border-radius: 0;
+    color: var(--color-ink);
+    transition: border-color var(--motion-fast) var(--ease-standard);
+  }
+
+  .field-input:hover {
+    border-bottom-color: var(--color-ink);
+  }
+
+  .field-input:focus-visible {
+    border-bottom-color: var(--color-oxide-rule);
+    outline-offset: 4px;
+  }
+
+  /* Invalid state is never colour-only: the border changes AND a text message
+     appears beneath the field (.field-error), so the problem is legible
+     without depending on colour perception. */
+  .field-input[aria-invalid='true'] {
+    border-bottom-color: var(--color-oxide-rule);
+    border-bottom-width: 2px;
+  }
+
+  .field-textarea {
+    resize: vertical;
+    min-height: 7.5rem;
+    line-height: 1.55;
+  }
+
+  /* A message that appears does so quickly and then stays put. Errors are
+     never faded in slowly or animated away: the point of the transition is
+     to show the reader where the new text arrived, not to make them wait
+     for it (§10). 140ms, opacity and 3px. */
+  @keyframes form-message-in {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .field-error,
+  .form-status-error,
+  .form-success {
+    animation: form-message-in var(--motion-base) var(--ease-standard) both;
+  }
+
+  .field-error {
+    margin: 0;
+    font-size: var(--text-meta);
+    line-height: 1.4;
+    color: var(--color-oxide-text);
+  }
+
+  .field-hint {
+    margin: 0;
+    font-size: var(--text-meta-sm);
+    color: var(--color-graphite-text);
+  }
+
+  .honeypot {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .form-submit {
+    justify-self: start;
+    position: relative;
+  }
+
+  /* A disabled submit is dimmed AND its text changes (see ContactForm.tsx);
+     the visual state is never the only signal that submission is under way. */
+  .form-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Always-mounted live region: aria-live only announces changes to content
+     that is already in the accessibility tree when the change happens, so
+     this element exists (empty) from first paint rather than being
+     conditionally rendered only once there is a message to show. */
+  .form-status {
+    margin: 0;
+    padding-top: 0.875rem;
+    font-size: var(--text-body);
+    line-height: 1.5;
+  }
+
+  .form-status:empty {
+    display: none;
+  }
+
+  .form-status-error {
+    border-top: var(--border-thin) solid var(--color-oxide-rule);
+    color: var(--color-oxide-text);
+  }
+
+  /* Success replaces the field grid entirely: showing a form full of
+     now-meaningless fields next to a "message sent" line reads as unfinished. */
+  .form-success {
+    display: grid;
+    gap: 0.75rem;
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .form-success:focus-visible {
+    outline-offset: 4px;
+  }
+
+  .form-success-heading {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-oxide-text);
+  }
+
+  .form-success-message {
+    font-size: var(--text-body-lg);
+    color: var(--color-ink);
+  }
+
+  .form-retry {
+    justify-self: start;
+    margin-top: 0.5rem;
+  }
+}

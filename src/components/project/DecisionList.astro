@@ -1,0 +1,80 @@
+---
+/**
+ * Key engineering decisions.
+ *
+ * Numbered, ruled entries rather than cards. Each states what was chosen and
+ * why the alternative was rejected, which is the part of a project worth
+ * reading and the part a README usually omits.
+ */
+interface Decision {
+  title: string;
+  body: string;
+}
+
+interface Props {
+  decisions: Decision[];
+  heading?: string;
+}
+
+const { decisions, heading = 'Key decisions' } = Astro.props;
+---
+
+<div class="decisions">
+  <p class="label decisions-heading">{heading}</p>
+
+  <ol class="decision-list">
+    {decisions.map((decision, i) => (
+      <li class="decision">
+        <p class="label decision-index">{String(i + 1).padStart(2, '0')}</p>
+        <div class="decision-body">
+          <h3 class="decision-title">{decision.title}</h3>
+          <p class="decision-text">{decision.body}</p>
+        </div>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .decisions-heading {
+    color: var(--color-oxide-text);
+  }
+
+  .decision-list {
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+  }
+
+  .decision {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 1.5rem;
+    padding-block: clamp(1.25rem, 3vw, 1.875rem);
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+    align-items: start;
+  }
+
+  .decision-index {
+    color: var(--color-graphite-text);
+    padding-top: 0.4em;
+  }
+
+  .decision-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.125rem, 2.2vw, 1.5rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    max-width: 34ch;
+  }
+
+  .decision-text {
+    margin-top: 0.75rem;
+    font-size: var(--text-body);
+    line-height: 1.6;
+    color: var(--color-graphite-text);
+    max-width: 68ch;
+  }
+</style>

@@ -1,0 +1,45 @@
+---
+/**
+ * Project detail routes.
+ *
+ * Slugs come from the content collection ids, which match the routes
+ * MASTER_CONTENT.md §05 defines:
+ *   /projects/chess-engine
+ *   /projects/legal-nlp
+ *   /projects/vera
+ *   /projects/geocounterfactual
+ *
+ * Prerendered, one page per entry. Previous and next wrap around the ordered
+ * set so no project page is a dead end.
+ */
+import { getCollection } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import ProjectLayout from '@/layouts/ProjectLayout.astro';
+
+export const getStaticPaths = (async () => {
+  const projects = (await getCollection('projects')).sort(
+    (a, b) => a.data.order - b.data.order,
+  );
+
+  return projects.map((project, index) => {
+    const previous = projects[(index - 1 + projects.length) % projects.length];
+    const next = projects[(index + 1) % projects.length];
+
+    // The modulo arithmetic above cannot produce an out-of-range index, but the
+    // collection could in principle be empty; fail loudly rather than render a
+    // broken navigation block.
+    if (!previous || !next) {
+      throw new Error(`Unable to resolve project navigation for "${project.id}".`);
+    }
+
+    return {
+      params: { slug: project.id },
+      props: { project, previous, next },
+    };
+  });
+}) satisfies GetStaticPaths;
+
+const { project, previous, next } = Astro.props;
+---
+
+<ProjectLayout project={project} previous={previous} next={next} />

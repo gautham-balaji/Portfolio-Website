@@ -1,0 +1,103 @@
+---
+/**
+ * 06 / EDUCATION (DESIGN_SYSTEM.md §21; MASTER_CONTENT.md §16).
+ *
+ * Intentionally minimal: institution at display scale, degree beneath, two
+ * metadata values. No school history, no timeline, no logo (§21, §43).
+ *
+ * This is the one section that scales rather than recomposes across
+ * breakpoints, because there is not enough content to justify a second layout.
+ */
+import { getCollection } from 'astro:content';
+import Section from '@/components/layout/Section.astro';
+
+const education = await getCollection('education');
+const entry = education[0];
+
+if (!entry) {
+  throw new Error('Expected at least one education entry.');
+}
+
+const { institution, degree, field, endYear } = entry.data;
+
+/* "Vellore Institute of Technology, Chennai" is the formal name held in the
+   content collection. §21 asks for the short form as the display line. */
+const displayName = 'VIT CHENNAI';
+---
+
+<Section id="education" number="06" label="Education" compact ariaLabel="Education">
+  <div class="grid-12 edu-grid" data-reveal>
+    <div class="edu-ident">
+      <h2 class="display edu-name">{displayName}</h2>
+      <p class="edu-degree">
+        {degree} / {field}
+      </p>
+      <p class="label edu-formal">{institution}</p>
+    </div>
+
+    <dl class="edu-meta">
+      <div class="edu-meta-item">
+        <dt class="label">Expected</dt>
+        <dd class="edu-meta-value">{endYear}</dd>
+      </div>
+    </dl>
+  </div>
+</Section>
+
+<style>
+  .edu-grid {
+    align-items: end;
+  }
+
+  .edu-ident,
+  .edu-meta {
+    grid-column: 1 / -1;
+  }
+
+  .edu-name {
+    font-size: var(--text-headline);
+  }
+
+  .edu-degree {
+    margin-top: 1rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.0625rem, 2vw, 1.5rem);
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+  }
+
+  .edu-formal {
+    margin-top: 0.5rem;
+  }
+
+  .edu-meta {
+    margin: 2rem 0 0;
+    padding-top: 1rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+    display: flex;
+    gap: 2.5rem;
+  }
+
+  .edu-meta-value {
+    margin: 0.25rem 0 0;
+    font-family: var(--font-mono);
+    font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+  }
+
+  @media (min-width: 768px) {
+    .edu-ident {
+      grid-column: 1 / span 8;
+    }
+
+    .edu-meta {
+      grid-column: 10 / span 3;
+      margin-top: 0;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+  }
+</style>

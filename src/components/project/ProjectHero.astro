@@ -1,0 +1,239 @@
+---
+/**
+ * Project page hero (DESIGN_SYSTEM.md §16).
+ *
+ * Number and status above, title at display scale, thesis beneath, then the
+ * metadata rail. Left-aligned and asymmetric, matching the homepage rather
+ * than becoming a centred article header.
+ *
+ * Where a project has no public repository the rail says so explicitly.
+ * MASTER_CONTENT.md §10 and §23 forbid inventing a URL, and stating the absence
+ * is more honest than omitting the row.
+ */
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { title, order, status, year, role, thesis, featured, github, live } = project.data;
+
+const number = String(order).padStart(2, '0');
+---
+
+<header class="project-hero">
+  <div class="container">
+    <a href="/#work" class="back-link enter" style="--enter-index: 0">
+      <span aria-hidden="true">&larr;</span>
+      <span class="label">Selected Work</span>
+    </a>
+
+    <p class="label hero-eyebrow enter" style="--enter-index: 1">
+      <span class="eyebrow-project">Project</span>
+      <span aria-hidden="true" class="eyebrow-slash">
+        /
+      </span>
+      <span class="eyebrow-number">{number}</span>
+      {featured && <span class="eyebrow-flag">Flagship</span>}
+    </p>
+
+    <h1 class="display hero-title enter" style="--enter-index: 2">
+      {title}
+    </h1>
+
+    {thesis && (
+      <p class="hero-thesis enter" style="--enter-index: 3">
+        {thesis}
+      </p>
+    )}
+
+    <div class="grid-12 hero-meta enter" style="--enter-index: 4">
+      <dl class="meta-rail">
+        <div class="meta-item">
+          <dt class="label">Status</dt>
+          <dd class="meta-value">{status}</dd>
+        </div>
+        <div class="meta-item">
+          <dt class="label">Year</dt>
+          <dd class="meta-value">{year}</dd>
+        </div>
+        <div class="meta-item">
+          <dt class="label">Role</dt>
+          <dd class="meta-value">{role}</dd>
+        </div>
+        <div class="meta-item meta-item-wide">
+          <dt class="label">Stack</dt>
+          <dd class="meta-value meta-stack">{project.data.technologies.join(' / ')}</dd>
+        </div>
+        <div class="meta-item">
+          <dt class="label">Source</dt>
+          <dd class="meta-value">
+            {github ? (
+              <a
+                href={github}
+                class="link-editorial"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View repository
+              </a>
+            ) : (
+              <span class="meta-absent">No public repository</span>
+            )}
+          </dd>
+        </div>
+        {live && (
+          <div class="meta-item">
+            <dt class="label">Live</dt>
+            <dd class="meta-value">
+              <a href={live} class="link-editorial" target="_blank" rel="noopener noreferrer">
+                Open
+              </a>
+            </dd>
+          </div>
+        )}
+      </dl>
+    </div>
+  </div>
+</header>
+
+<style>
+  .project-hero {
+    padding-block: clamp(2rem, 5vw, 3.5rem) 0;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-height: 44px;
+    text-decoration: none;
+    color: var(--color-graphite-text);
+    transition: color var(--motion-fast) var(--ease-standard);
+  }
+
+  .back-link:hover {
+    color: var(--color-ink);
+  }
+
+  /* The one arrow on the site that moves, because here the movement is the
+     meaning: back. Everything else keeps its arrows still (§25). */
+  .back-link span[aria-hidden] {
+    transition: translate var(--motion-base) var(--ease-standard);
+  }
+
+  .back-link:hover span[aria-hidden],
+  .back-link:focus-visible span[aria-hidden] {
+    translate: -0.25rem 0;
+  }
+
+  .back-link:hover .label {
+    color: var(--color-ink);
+  }
+
+  .hero-eyebrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.5ch;
+    margin-top: clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  .eyebrow-number {
+    color: var(--color-oxide-text);
+  }
+
+  .eyebrow-slash {
+    color: var(--color-graphite-text);
+  }
+
+  .eyebrow-flag {
+    margin-left: 1.25rem;
+    padding-inline: 0.5rem;
+    border: var(--border-thin) solid var(--color-oxide-rule);
+    border-radius: var(--radius-sm);
+    color: var(--color-oxide-text);
+  }
+
+  .hero-title {
+    font-size: var(--text-project);
+    text-transform: uppercase;
+    margin-top: clamp(0.75rem, 2vw, 1.25rem);
+    margin-left: -0.03em;
+    overflow-wrap: break-word;
+  }
+
+  .hero-thesis {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: var(--text-deck);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin-top: clamp(1.25rem, 3vw, 2rem);
+    /* Widened from 26ch: at 26 the thesis broke into four short lines, which
+       reads as a landing-page slogan stacked up rather than the standfirst of
+       a technical article (§16). A longer measure gives it two or three full
+       lines. */
+    max-width: 34ch;
+  }
+
+  .hero-meta {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .meta-rail {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-ink);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 1.5rem;
+  }
+
+  .meta-value {
+    margin: 0.25rem 0 0;
+    font-size: var(--text-body);
+    line-height: 1.4;
+    color: var(--color-ink);
+  }
+
+  /* The repository link is the only control in this rail, and as bare inline
+     text it measured 20px tall: under WCAG 2.2's 24px minimum and well under
+     the 44px this site sets itself (DESIGN_SYSTEM §33). It stays visually an
+     editorial underlined link; the target around it just grows to a real
+     size. */
+  .meta-value a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .meta-stack {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    line-height: 1.6;
+  }
+
+  .meta-absent {
+    color: var(--color-graphite-text);
+  }
+
+  @media (min-width: 768px) {
+    .meta-rail {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .meta-item-wide {
+      grid-column: span 2;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .meta-rail {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+</style>

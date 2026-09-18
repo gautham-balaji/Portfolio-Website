@@ -1,0 +1,69 @@
+---
+/**
+ * Numbered section wrapper.
+ *
+ * Renders the `01 / SELECTED WORK` header treatment from DESIGN_SYSTEM.md §51
+ * above a thin rule. The numbering is information, not decoration: it is the
+ * reader's position in the sequence defined by MASTER_CONTENT.md §05.
+ */
+interface Props {
+  id: string;
+  /** Two-digit sequence number, e.g. "01". */
+  number: string;
+  /** Uppercase section name, e.g. "SELECTED WORK". */
+  label: string;
+  /** Use the tighter vertical rhythm. */
+  compact?: boolean;
+  /** Accessible name for the region, when the visible heading is elsewhere. */
+  ariaLabel?: string;
+}
+
+const { id, number, label, compact = false, ariaLabel } = Astro.props;
+---
+
+<section
+  id={id}
+  class:list={['section', compact ? 'section-pad-sm' : 'section-pad']}
+  {...(ariaLabel ? { 'aria-label': ariaLabel } : {})}
+>
+  <div class="container">
+    <div class="section-head">
+      <p class="label label-ink">
+        <span class="section-number">{number}</span>
+        <span aria-hidden="true" class="section-slash">
+          /
+        </span>
+        {/* The section name resolves out of scrambled glyphs the first time
+            it is scrolled to (DESIGN_SYSTEM §26). The number is deliberately
+            left alone: it is the reader's position in the sequence, so it
+            should be legible the instant it appears. */}
+        <span data-decrypt>{label}</span>
+      </p>
+    </div>
+    <hr class="rule rule-ink" data-reveal="rule" />
+
+    <div class="section-body">
+      <slot />
+    </div>
+  </div>
+</section>
+
+<style>
+  .section-head {
+    margin-bottom: 0.75rem;
+  }
+
+  .section-number {
+    color: var(--color-oxide-text);
+  }
+
+  .section-slash {
+    display: inline-block;
+    margin-inline: 0.5ch;
+    color: var(--color-graphite-text);
+  }
+
+  .section-body {
+    padding-top: clamp(2rem, 5vw, 4rem);
+  }
+</style>

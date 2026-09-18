@@ -1,0 +1,318 @@
+---
+/**
+ * 01 / SELECTED WORK (DESIGN_SYSTEM.md §13, §14; MASTER_CONTENT.md §07, §24).
+ *
+ * Hierarchy is carried by composition, not by badges:
+ *   - The flagship gets a full case-study block: oversized number, project
+ *     title at display scale, a thesis line, a large figure, and a metadata
+ *     rail. It occupies roughly three times the vertical space of a row.
+ *   - Projects 02-04 are ruled index rows, text-led and without media.
+ *
+ * That difference is the point. Four equal cards would flatten the hierarchy
+ * MASTER_CONTENT.md §24 defines.
+ */
+import { getCollection } from 'astro:content';
+import Section from '@/components/layout/Section.astro';
+import FigurePlate from '@/components/project/FigurePlate.astro';
+import ProjectRow from '@/components/project/ProjectRow.astro';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+
+const flagship = projects.find((p) => p.data.featured);
+const rest = projects.filter((p) => !p.data.featured);
+
+if (!flagship) {
+  throw new Error(
+    'No featured project found. Exactly one project must set `featured: true` ' +
+      '(MASTER_CONTENT.md §24 designates the XAI Chess Engine as the flagship).',
+  );
+}
+
+const f = flagship.data;
+
+/* Earliest year across the set, so the range is accurate rather than derived
+   from the flagship alone (VERA is 2025, the flagship is 2026). */
+const earliestYear = Math.min(...projects.map((p) => p.data.year));
+---
+
+<Section id="work" number="01" label="Selected Work">
+  <div class="grid-12 intro" data-reveal>
+    <h2 class="display intro-heading">THINGS I'VE BUILT.</h2>
+    <p class="intro-note label">
+      {projects.length} PROJECTS / {earliestYear} &ndash; PRESENT
+    </p>
+  </div>
+
+  {/* ---------- Flagship ---------- */}
+  <article class="flagship" aria-labelledby="flagship-title">
+    <div class="grid-12 flagship-head" data-reveal>
+      <p class="flagship-number display">01</p>
+
+      <div class="flagship-headline">
+        <h3 id="flagship-title" class="display flagship-title">
+          <a href={`/projects/${flagship.id}`} class="flagship-title-link">
+            {f.title}
+          </a>
+        </h3>
+        <p class="flagship-thesis">{f.positioning}</p>
+      </div>
+    </div>
+
+    <div class="grid-12 flagship-body" data-reveal>
+      <div class="flagship-media">
+        <FigurePlate
+          figure="01"
+          caption="XAI Chess Engine interface: board, live analysis, ranked moves and generated explanations."
+          ratio="16 / 10"
+          sizes="(min-width: 1024px) 62vw, 100vw"
+        />
+      </div>
+
+      <div class="flagship-meta">
+        <dl class="meta-list">
+          <div class="meta-item">
+            <dt class="label">Status</dt>
+            <dd class="meta-value">{f.status}</dd>
+          </div>
+          <div class="meta-item">
+            <dt class="label">Year</dt>
+            <dd class="meta-value">{f.year}</dd>
+          </div>
+          <div class="meta-item">
+            <dt class="label">Role</dt>
+            <dd class="meta-value">{f.role}</dd>
+          </div>
+          <div class="meta-item">
+            <dt class="label">Stack</dt>
+            <dd class="meta-value meta-stack">{f.technologies.join(' / ')}</dd>
+          </div>
+        </dl>
+
+        <p class="flagship-descriptor">{f.descriptor}</p>
+
+        <div class="flagship-actions">
+          <a href={`/projects/${flagship.id}`} class="btn btn-primary">
+            Read case study
+          </a>
+
+          {f.github && (
+            <a
+              href={f.github}
+              class="btn btn-secondary"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View source
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  </article>
+
+  {/* ---------- Index rows ---------- */}
+  {/* `data-project-index` scopes the global index-focus styles below to this
+      container. Experience.astro renders its own `.rows` / `.row` pair, and a
+      bare class selector in a global block would reach it too. */}
+  <div class="rows" data-project-index>
+    {rest.map((project) => (
+      <ProjectRow project={project} />
+    ))}
+    <hr class="rule" />
+  </div>
+</Section>
+
+<style>
+  /* `space-between` pushed the project count to the far edge, where it read as
+     floating: it sat wherever the heading happened to stop, which is a ragged
+     edge, not a line. On the grid it lands in a column instead, and the count
+     aligns with the metadata rail of the flagship block below it. */
+  .intro {
+    align-items: baseline;
+    row-gap: 1rem;
+    margin-bottom: clamp(3rem, 8vw, 6rem);
+  }
+
+  .intro-heading {
+    grid-column: 1 / -1;
+    font-size: var(--text-section);
+    text-transform: uppercase;
+  }
+
+  .intro-note {
+    grid-column: 1 / -1;
+  }
+
+  @media (min-width: 1024px) {
+    .intro-heading {
+      grid-column: 1 / span 8;
+    }
+
+    .intro-note {
+      grid-column: 9 / span 4;
+    }
+  }
+
+  /* --- Flagship --- */
+  .flagship {
+    margin-bottom: clamp(4rem, 10vw, 8rem);
+  }
+
+  .flagship-head {
+    align-items: start;
+    margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
+  }
+
+  .flagship-number {
+    grid-column: 1 / -1;
+    font-size: var(--text-headline);
+    line-height: 1;
+    color: var(--color-oxide-text);
+  }
+
+  .flagship-headline {
+    grid-column: 1 / -1;
+  }
+
+  .flagship-title {
+    font-size: var(--text-project);
+    text-transform: uppercase;
+  }
+
+  .flagship-thesis {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: var(--text-deck);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin-top: clamp(0.875rem, 2vw, 1.25rem);
+    max-width: 24ch;
+    text-wrap: balance;
+  }
+
+  .flagship-media,
+  .flagship-meta {
+    grid-column: 1 / -1;
+  }
+
+  .flagship-meta {
+    margin-top: 2rem;
+  }
+
+  .meta-list {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem 1.5rem;
+    padding-top: 0.75rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .meta-item {
+    min-width: 0;
+  }
+
+  .meta-value {
+    margin: 0.25rem 0 0;
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: 1.4;
+    color: var(--color-ink);
+  }
+
+  .meta-stack {
+    font-size: var(--text-meta);
+    line-height: 1.6;
+  }
+
+  .flagship-descriptor {
+    margin-top: 1.75rem;
+    font-size: var(--text-body);
+    line-height: 1.6;
+    color: var(--color-graphite-text);
+    max-width: 46ch;
+  }
+
+  .flagship-title-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .flagship-title-link:hover {
+    color: var(--color-oxide-text);
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 0.1em;
+  }
+
+  .flagship-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .flagship-number {
+      grid-column: 1 / span 1;
+    }
+
+    .flagship-headline {
+      grid-column: 2 / span 11;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .flagship-headline {
+      grid-column: 2 / span 9;
+    }
+
+    .flagship-media {
+      grid-column: 1 / span 8;
+    }
+
+    .flagship-meta {
+      grid-column: 9 / span 4;
+      margin-top: 0;
+    }
+
+    .meta-list {
+      grid-template-columns: 1fr;
+      gap: 1.125rem;
+    }
+  }
+</style>
+
+<style is:global>
+  /* --- Index focus -------------------------------------------------------
+     When one row is engaged, the rest of the index steps back. This is the
+     second of the two interactive effects the phase budget allows, and it
+     costs no JavaScript at all: `:has()` lets the container react to its own
+     children, which means pointer and keyboard behave identically and there
+     is nothing to hydrate.
+
+     Global rather than scoped because the container (.rows) is rendered here
+     and the rows themselves are rendered by ProjectRow.astro, so Astro's
+     per-component scoping would stop the selector matching across the
+     boundary. Same precedent as the prose styles in ProjectLayout.astro.
+
+     Receding is emphasis, never information: the row keeps its full contrast
+     the moment the pointer leaves, nothing is hidden, and the engaged row is
+     marked by rule colour and position as well as by contrast, so opacity is
+     never carrying a meaning on its own (§25). Browsers without :has() drop
+     the rule and simply show a static index.
+
+     The rows recede with `filter` rather than `opacity` because opacity on a
+     row belongs to the reveal system, which fades it in over a much longer
+     duration. Two properties, two owners, no shorthand fighting. The
+     :not(.js-reveal) rule covers the case where reveals are off entirely and
+     nothing else has declared a transition for these rows. */
+  html:not(.js-reveal) [data-project-index] .row {
+    transition: filter var(--motion-base) var(--ease-standard);
+  }
+
+  [data-project-index]:has(.row:hover) .row:not(:hover),
+  [data-project-index]:has(.row:focus-within) .row:not(:focus-within) {
+    filter: opacity(0.62);
+  }
+</style>

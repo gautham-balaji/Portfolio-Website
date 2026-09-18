@@ -1,0 +1,101 @@
+---
+/**
+ * Base document shell.
+ *
+ * Owns the landmark skeleton, the metadata block, and the skip link, so no
+ * page can ship without them (DESIGN_SYSTEM.md §33, MASTER_CONTENT.md §27).
+ *
+ * `description` and `path` are required props: a page cannot render without
+ * declaring its own metadata.
+ */
+import { buildMeta, type SeoInput } from '@/lib/seo';
+import { buildPersonSchema, serialiseSchema } from '@/lib/schema';
+import { SITE } from '@/lib/site';
+import '@/styles/global.css';
+
+interface Props extends SeoInput {
+  /** Emit the Person graph. True on the home page only. */
+  includePersonSchema?: boolean;
+}
+
+const { includePersonSchema = false, ...seo } = Astro.props;
+const meta = buildMeta(seo);
+const personSchema = includePersonSchema ? serialiseSchema(buildPersonSchema()) : null;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{meta.title}</title>
+    <meta name="description" content={meta.description} />
+    <link rel="canonical" href={meta.canonical} />
+    <meta name="robots" content={meta.robots} />
+
+    <meta property="og:type" content={meta.ogType} />
+    <meta property="og:title" content={meta.ogTitle} />
+    <meta property="og:description" content={meta.ogDescription} />
+    <meta property="og:url" content={meta.ogUrl} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:image" content={meta.ogImage} />
+
+    <meta name="twitter:card" content={meta.twitterCard} />
+    <meta name="twitter:title" content={meta.ogTitle} />
+    <meta name="twitter:description" content={meta.ogDescription} />
+    <meta name="twitter:image" content={meta.ogImage} />
+
+    <meta name="theme-color" content="#e8e4dc" />
+    <link rel="icon" type="image/svg+xml" href="/favicon/icon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    {personSchema && (
+      <script type="application/ld+json" is:inline set:html={personSchema}></script>
+    )}
+
+    {/* Gates the scroll-reveal hidden state (src/styles/global.css).
+        Inline and synchronous on purpose: a deferred module would paint the
+        content first and then hide it. Two conditions must hold before any
+        element is allowed to start hidden -- JavaScript is running, and the
+        reader has not asked for reduced motion -- and the timeout is a
+        failsafe for the case where the reveal module never arrives, so a
+        network failure can never leave the page blank. */}
+    <script is:inline>
+      (function () {
+        try {
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          const root = document.documentElement;
+          root.classList.add('js-reveal');
+          window.setTimeout(function () {
+            if (!root.hasAttribute('data-reveal-ready')) root.classList.remove('js-reveal');
+          }, 2500);
+        } catch {
+          /* No matchMedia, no reveals. The page is already readable. */
+        }
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">
+      Skip to content
+    </a>
+
+    <slot name="header" />
+
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+
+    <slot name="footer" />
+
+    <script>
+      import '@/scripts/reveal';
+    </script>
+  </body>
+</html>

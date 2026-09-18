@@ -1,0 +1,188 @@
+---
+/**
+ * Sticky editorial navigation (DESIGN_SYSTEM.md §10).
+ *
+ * Left: wordmark. Right: four destinations. Thin bottom rule, Paper ground,
+ * low height. Never a floating pill.
+ *
+ * Mobile uses a native <details> disclosure rather than a scripted menu. It is
+ * keyboard operable, works with JavaScript disabled, and needs no focus trap
+ * because it is not modal. Phase 2 is not the interaction phase; if a modal
+ * panel is wanted later it can replace this without changing the markup
+ * contract.
+ */
+import { NAV_ITEMS } from '@/lib/copy';
+import { SITE } from '@/lib/site';
+---
+
+<header class="site-nav">
+  <nav class="container nav-inner" aria-label="Primary">
+    <a href="#top" class="wordmark">
+      {SITE.name}
+    </a>
+
+    <ul class="nav-list">
+      {NAV_ITEMS.map((item) => (
+        <li>
+          <a href={item.href} class="nav-link">
+            {item.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <details class="nav-disclosure">
+      <summary aria-label="Menu">
+        <span class="label label-ink">Menu</span>
+      </summary>
+      <ul class="nav-panel">
+        {NAV_ITEMS.map((item) => (
+          <li>
+            <a href={item.href} class="nav-panel-link">
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </details>
+  </nav>
+</header>
+
+<style>
+  .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: var(--color-paper);
+    border-bottom: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: var(--nav-height);
+  }
+
+  .wordmark {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-ink);
+    /* Keeps the wordmark a 44px target without inflating the bar. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .nav-list {
+    display: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: clamp(1.25rem, 3vw, 2.75rem);
+  }
+
+  .nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-family: var(--font-mono);
+    /* 13px rather than 12px: these are primary navigation targets, not
+       incidental metadata, and still inside the §05 technical range. */
+    font-size: var(--text-meta);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-graphite-text);
+    transition: color var(--motion-fast) var(--ease-standard);
+  }
+
+  /* The rule is drawn rather than switched on: it grows from the leading
+     edge of the word, which is the same gesture the section rules use.
+     Colour still changes alongside it, so the state never depends on
+     noticing a one-pixel line. */
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 6px;
+    height: 1px;
+    background-color: var(--color-oxide-rule);
+    scale: 0 1;
+    transform-origin: left center;
+    transition: scale var(--motion-base) var(--ease-standard);
+  }
+
+  .nav-link:hover,
+  .nav-link:focus-visible {
+    color: var(--color-ink);
+  }
+
+  .nav-link:hover::after,
+  .nav-link:focus-visible::after {
+    scale: 1 1;
+  }
+
+  /* --- Mobile disclosure --- */
+  .nav-disclosure summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 0.25rem;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .nav-disclosure summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .nav-disclosure[open] summary .label {
+    color: var(--color-oxide-text);
+  }
+
+  .nav-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem var(--page-gutter) 1.25rem;
+    background-color: var(--color-paper);
+    border-bottom: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .nav-panel-link {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-ink);
+    border-bottom: var(--border-thin) solid var(--color-paper-soft);
+  }
+
+  .nav-panel li:last-child .nav-panel-link {
+    border-bottom: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .nav-list {
+      display: flex;
+    }
+
+    .nav-disclosure {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,255 @@
+---
+/**
+ * Hero (DESIGN_SYSTEM.md §11, §39; MASTER_CONTENT.md §06).
+ *
+ * Desktop: text in columns 1-7, portrait in 9-12. Height is content-driven and
+ * capped well below a cinematic full-screen opener, so the CTAs stay above the
+ * fold on a normal laptop.
+ *
+ * Mobile reorders deliberately (§39): eyebrow, name, positioning, supporting
+ * copy, CTAs, portrait, metadata. The portrait sits AFTER the CTAs so it never
+ * pushes the primary action down the page. This is a recomposition, not a
+ * reflow, so DOM order is the mobile order and desktop repositions the portrait
+ * with grid placement.
+ *
+ * The name is a plain <h1>. Text Pressure attaches to this node via
+ * `data-text-pressure` (src/scripts/textPressure.ts); it is never responsible
+ * for rendering it, so the heading is complete and readable with the script
+ * absent, blocked or declined.
+ *
+ * The entrance is pure CSS. It could have been driven by the reveal observer
+ * like every other section, but the hero is above the fold and should open the
+ * moment the page paints rather than wait for a deferred module: keyframes
+ * with `animation-fill-mode: both` need no JavaScript at all, so a reader with
+ * scripting disabled still gets the sequence, and the global reduced-motion
+ * rule collapses it to nothing.
+ */
+import { Image } from 'astro:assets';
+import portrait from '@/assets/portrait/gautham-balaji.png';
+import { HERO } from '@/lib/copy';
+import { RESUME_AVAILABLE, RESUME_PATH } from '@/lib/site';
+---
+
+<section class="hero" aria-labelledby="hero-name">
+  <div class="container">
+    <div class="grid-12 hero-grid">
+      <div class="hero-text">
+        <p class="label hero-eyebrow enter" style="--enter-index: 0">
+          {HERO.eyebrow}
+        </p>
+
+        <h1
+          id="hero-name"
+          class="display hero-name enter"
+          style="--enter-index: 1"
+          data-text-pressure
+        >
+          {HERO.heading}
+        </h1>
+
+        <p class="hero-positioning enter" style="--enter-index: 2">
+          {HERO.positioning}
+        </p>
+
+        <p class="hero-supporting enter" style="--enter-index: 3">
+          {HERO.supporting}
+        </p>
+
+        <div class="hero-actions enter" style="--enter-index: 4">
+          <a href="#work" class="btn btn-primary">
+            {HERO.primaryCta}
+          </a>
+
+          {RESUME_AVAILABLE ? (
+            <a href={RESUME_PATH} class="btn btn-secondary" download>
+              {HERO.secondaryCta}
+            </a>
+          ) : (
+            /* Kept for the case where the PDF is withdrawn: rendering a link
+                 to a missing file would 404, so the control would state its
+                 real status instead. */
+            <span class="btn btn-secondary is-unavailable" aria-disabled="true">
+              RESUME COMING SOON
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div class="hero-portrait enter" style="--enter-index: 5">
+        <div class="portrait-frame">
+          <Image
+            src={portrait}
+            alt="Gautham Balaji"
+            widths={[320, 480, 640, 960]}
+            sizes="(min-width: 1024px) 32vw, (min-width: 768px) 50vw, 100vw"
+            loading="eager"
+            fetchpriority="high"
+            class="portrait-image"
+          />
+        </div>
+        <p class="label portrait-caption">PORTRAIT / 2026</p>
+      </div>
+
+      <div class="hero-meta enter" style="--enter-index: 6">
+        <hr class="rule" />
+        <div class="hero-meta-row">
+          <p class="label">{HERO.location}</p>
+          <p class="label hero-scroll" aria-hidden="true">
+            {HERO.scrollHint}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import '@/scripts/textPressure';
+</script>
+
+<style>
+  /* --- Text Pressure -----------------------------------------------------
+     Applied by src/scripts/textPressure.ts. Until (and unless) that runs,
+     none of these classes exist and the heading is ordinary text. */
+  .hero-name :global(.tp-word) {
+    /* Breaks may fall between words, never inside one. */
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .hero-name :global(.tp-char) {
+    display: inline-block;
+    /* The script locks an explicit width here, measured at rest, so a letter
+       under pressure grows within its own slot and the line never reflows. */
+    text-align: center;
+    will-change: font-variation-settings;
+  }
+
+  .hero {
+    /* Bottom padding is 0 on purpose. Selected Work opens with a full
+       --space-section of its own, and the hero adding 4.5rem on top of that
+       left ~245px of unowned air under the metadata rule at 1440. The gap
+       below the hero is now exactly one section's rhythm, like every other
+       boundary on the page. */
+    padding-block: clamp(2.5rem, 7vw, 5.5rem) 0;
+  }
+
+  .hero-grid {
+    align-items: start;
+  }
+
+  .hero-text,
+  .hero-portrait,
+  .hero-meta {
+    grid-column: 1 / -1;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: clamp(1rem, 2.5vw, 1.75rem);
+  }
+
+  .hero-name {
+    font-size: var(--text-hero);
+    /* Optical alignment: pulls the cap-height flush with the rule above. */
+    margin-left: -0.04em;
+    text-transform: uppercase;
+  }
+
+  .hero-positioning {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: var(--text-hero-positioning);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin-top: clamp(1.25rem, 3vw, 2rem);
+    max-width: 24ch;
+  }
+
+  .hero-supporting {
+    font-size: var(--text-body-lg);
+    color: var(--color-graphite-text);
+    line-height: 1.55;
+    margin-top: 1.25rem;
+    max-width: 52ch;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  }
+
+  .is-unavailable {
+    border-style: dashed;
+    color: var(--color-graphite-text);
+    border-color: var(--color-graphite-rule);
+    cursor: default;
+  }
+
+  /* --- Portrait --- */
+  .hero-portrait {
+    margin-top: clamp(2.5rem, 6vw, 0rem);
+  }
+
+  .portrait-frame {
+    border: var(--border-thin) solid var(--color-ink);
+    background-color: var(--color-paper-soft);
+    overflow: hidden;
+    /* Editorial rectangular crop, not a headshot circle (§11). */
+    aspect-ratio: 4 / 5;
+  }
+
+  .portrait-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 22%;
+  }
+
+  .portrait-caption {
+    margin-top: 0.75rem;
+  }
+
+  /* --- Metadata rail --- */
+  .hero-meta {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .hero-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.875rem;
+  }
+
+  .hero-scroll {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .hero-scroll {
+      display: block;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-text {
+      grid-column: 1 / span 7;
+      /* Keeps the name and the portrait sharing a baseline band. */
+      grid-row: 1;
+    }
+
+    .hero-portrait {
+      grid-column: 9 / span 4;
+      grid-row: 1;
+      margin-top: 0;
+    }
+
+    .hero-meta {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+</style>
