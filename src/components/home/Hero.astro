@@ -65,8 +65,9 @@ import { RESUME_AVAILABLE, RESUME_PATH } from '@/lib/site';
               {HERO.secondaryCta}
             </a>
           ) : (
-            /* The PDF does not exist yet. Rendering a link to a missing file
-                 would 404, so the control states its real status instead. */
+            /* Kept for the case where the PDF is withdrawn: rendering a link
+                 to a missing file would 404, so the control would state its
+                 real status instead. */
             <span class="btn btn-secondary is-unavailable" aria-disabled="true">
               RESUME COMING SOON
             </span>

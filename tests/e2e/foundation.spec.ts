@@ -148,6 +148,32 @@ test('declares a favicon and a real, absolute OG image', async ({ page }) => {
   expect(ogImage).toMatch(/^https?:\/\/.+\/images\/og-default\.png$/);
 });
 
+test('both resume entry points download the real PDF', async ({ page }) => {
+  // The resume was absent for most of the rebuild and the CTAs were gated
+  // behind RESUME_AVAILABLE so the site never linked to a missing file. Now
+  // that the PDF exists the gate is open, and what matters is that neither
+  // entry point can quietly rot into a 404: the path is declared once in
+  // src/lib/site.ts and must keep matching the filename on disk.
+  await page.goto('/');
+
+  const entryPoints = [
+    page.locator('.hero-actions a[href*="resume"]'),
+    page.locator('.contact-links a[href*="resume"]'),
+  ];
+
+  for (const cta of entryPoints) {
+    await expect(cta).toHaveCount(1);
+    await expect(cta).toHaveAttribute('href', '/resume/resume_gautham.pdf');
+    // `download` rather than a navigation: this is a file, not a page.
+    await expect(cta).toHaveAttribute('download', '');
+  }
+
+  const response = await page.request.get('/resume/resume_gautham.pdf');
+  expect(response.status()).toBe(200);
+  // Served as a real PDF, not an HTML error page dressed as one.
+  expect((await response.body()).subarray(0, 4).toString()).toBe('%PDF');
+});
+
 test('emits canonical, description and Person structured data', async ({ page }) => {
   await page.goto('/');
 

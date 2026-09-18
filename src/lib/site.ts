@@ -37,12 +37,17 @@ export const SITE = {
 /**
  * Resume download path.
  *
- * The PDF does not exist yet (REBUILD_PLAN gap #4). `RESUME_AVAILABLE` gates
- * the UI so the site never renders a link to a missing file: the secondary CTA
- * degrades to a disabled state with an honest label instead of 404ing.
+ * The PDF now exists at public/resume/resume_gautham.pdf, so the gate is open
+ * and both entry points (the hero's secondary CTA and the contact rail) render
+ * real download links. The gate itself stays: it is what kept the site from
+ * ever linking to a missing file while the PDF was outstanding, and it is the
+ * switch to close again if the file is withdrawn.
+ *
+ * `RESUME_PATH` must match the filename on disk exactly. It is served straight
+ * from public/, so it is a root-relative URL and works from every route.
  */
-export const RESUME_PATH = '/resume/gautham-balaji-resume.pdf';
-export const RESUME_AVAILABLE = false;
+export const RESUME_PATH = '/resume/resume_gautham.pdf';
+export const RESUME_AVAILABLE = true;
 
 /** MASTER_CONTENT.md §16. Used for JSON-LD `alumniOf`. */
 export const EDUCATION_INSTITUTION = 'Vellore Institute of Technology, Chennai';
