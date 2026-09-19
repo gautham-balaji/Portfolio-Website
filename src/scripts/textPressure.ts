@@ -11,8 +11,9 @@
  *
  * Four rules shape the implementation:
  *
- *   Readable always.   The axes move within a narrow band (weight 600 to 780,
- *                      width 100 to 107). The name never deforms.
+ *   Readable always.   The axes stay inside the range Archivo ships (weight
+ *                      600 to 900, width 100 to 104). The name gets heavier
+ *                      under the pointer; it never deforms.
  *
  *   No layout shift.   Every character span is locked to the width it
  *                      measured at rest, so a letter under pressure expands
@@ -34,13 +35,49 @@
  *                      the server-rendered heading is left exactly as it is.
  */
 
+/**
+ * Axis range, calibrated against the rendered page rather than picked.
+ *
+ * A production audit found the effect technically working but invisible in
+ * normal use, and measuring it showed why: with the peak at 780 and the radius
+ * at 2x, a letter only approached full weight when the pointer was almost
+ * exactly on its centre, and 600 to 780 is a small step for a face this large.
+ * Halfway to the old radius the letter was at weight 645, which nobody sees.
+ *
+ * REST_WEIGHT stays at 600 deliberately, and does not follow the audit's
+ * suggested 400. 600 is what `.display` sets in global.css, so it is the
+ * weight the heading has for a touch reader, a reduced-motion reader and a
+ * reader with no JavaScript. Dropping the rest value would mean the hero name
+ * visibly un-bolded the instant a mouse moved anywhere in the section, and
+ * would leave the desktop resting state different from the static one, which
+ * DESIGN_SYSTEM §12 does not allow ("static fallback is identical"). The range
+ * is widened at the top instead: 600 to 900 is 300 units where it was 180, and
+ * 900 is the axis maximum Archivo ships, not a distortion of it.
+ *
+ * PEAK_WIDTH comes DOWN, from 107 to 104, which looks backwards but is not.
+ * Each character sits in a slot locked to its resting width, so everything
+ * above rest overflows into the gaps either side. Measured on the page, the
+ * widest glyph overflows its slot by 14.7px at 1280 under the old 780/107, and
+ * by exactly the same 14.7px at 900/100: the extra weight costs the same room
+ * the old width axis was spending. 104 buys back a little of the swell for
+ * 18.5px total, while 108 reached 22.3px and visibly closed the gaps between
+ * letters. The letters press; they do not touch.
+ */
 const REST_WEIGHT = 600;
-const PEAK_WEIGHT = 780;
+const PEAK_WEIGHT = 900;
 const REST_WIDTH = 100;
-const PEAK_WIDTH = 107;
+const PEAK_WIDTH = 104;
 
-/** Influence radius, in multiples of the heading's own font size. */
-const RADIUS_RATIO = 2;
+/**
+ * Influence radius, in multiples of the heading's own font size.
+ *
+ * 3x rather than 2x, so the swell reaches a few letters either side of the
+ * pointer and reads as a wave moving through the word. The falloff stays
+ * squared: a flatter curve (tested with smoothstep) lifted every neighbour at
+ * once, which both looked like a global weight change rather than pressure and
+ * pushed adjacent glyphs into each other.
+ */
+const RADIUS_RATIO = 3;
 
 /** Per-frame approach rate. Low enough to trail the pointer very slightly. */
 const EASING = 0.18;
