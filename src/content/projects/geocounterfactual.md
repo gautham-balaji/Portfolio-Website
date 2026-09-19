@@ -109,6 +109,33 @@ metrics:
   - label: Simulation time
     value: ~146-195 s
     note: Per region. Current behaviour, not a performance result.
+parameters:
+  - id: constraints
+    label: Constraints and detection rules
+    section: constraints
+    note: >-
+      The detection rules decide which historical changes count as a real
+      water intervention; the constraints bound what the generator is allowed
+      to propose. Both are deterministic NumPy, which is what makes them
+      checkable.
+    rows:
+      - label: Water presence
+        value: Present in at least 2 of 2022-2024
+      - label: Historical absence
+        value: Absent across 2018-2020
+      - label: Rainfall confound control
+        value: CHIRPS used to remove wet-year confounds
+      - label: Water slope
+        value: Reject water on slopes above approximately 2.5 degrees
+      - label: NDVI ceiling
+        value: Applied
+        note: The numeric threshold is not published.
+      - label: Existing open water
+        value: Protected
+      - label: Change mask
+        value: Changes restricted to the spatial change mask
+      - label: Background
+        value: Held constant through hard compositing
 limitations:
   - >-
     Fine-tuned generative weights are not complete. Training is still being
@@ -214,14 +241,20 @@ supported conclusions the underlying reality did not.
 ## Constraints
 
 The counterfactual is bounded before generation, not corrected afterwards.
+That ordering is the whole design. A model asked to produce a plausible image
+and then corrected has already decided what the landscape looks like; a model
+whose output space is bounded first cannot propose the violation in the first
+place.
 
-Water interventions are constrained by slope. Vegetation is capped by an NDVI
-ceiling. Existing open water is protected. Changes are restricted to a spatial
-change mask, and the background is held constant through hard compositing.
+Every bound is a calculation over the terrain rather than a judgement about
+the picture, which is why each one can be stated as a rule and checked against
+the data. The table below lists them, together with the detection rules that
+decide whether a historical change counts as a real intervention at all.
 
-The concrete rule that illustrates the approach: water appearing on a slope
-steeper than roughly **2.5 degrees** should be rejected, because gravity does
-not permit it.
+The clearest of them is the slope limit in the table below. Water is not
+allowed to appear on ground too steep to hold it, because gravity does not
+permit it, and that is a fact about the terrain rather than an opinion about
+the image.
 
 ## The critic
 

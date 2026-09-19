@@ -100,6 +100,59 @@ metrics:
   - label: Attribution steps
     value: '50'
     note: Integrated Gradients interpolation steps from an empty-board baseline.
+parameters:
+  - id: network
+    label: Network
+    section: board-representation-and-the-network
+    rows:
+      - label: Convolution
+        value: Conv2D 64 to 128 to 128 filters
+      - label: Batch normalization
+        value: Present
+      - label: Flatten
+        value: Present
+      - label: Dense layer
+        value: 256 units
+      - label: Dropout
+        value: '0.3'
+      - label: Output
+        value: Dense 1
+  - id: classical-models
+    label: Classical models
+    section: the-classical-layer
+    rows:
+      - label: Random Forest
+        value: 500 trees, maximum depth 12
+      - label: Random Forest target
+        value: Future space control
+      - label: MLP
+        value: 256 to 128 to 64
+      - label: MLP preprocessing
+        value: StandardScaler
+      - label: MLP target
+        value: Game outcome
+  - id: ridge-fusion
+    label: Ridge fusion
+    section: fusion
+    note: >-
+      These are fitted ridge coefficients, not feature importance values. Only
+      the CNN score is documented as normalised, so the inputs are on
+      different scales and the magnitudes cannot be compared against each
+      other. Read together they say the learned evaluation dominates,
+      material remains a meaningful correction, and mobility contributes
+      almost nothing once the other signals are present.
+    rows:
+      - label: CNN score
+        value: '330.9'
+        note: Normalised.
+      - label: Material
+        value: '32.4'
+      - label: Center control
+        value: '5.17'
+      - label: Space control
+        value: '0.79'
+      - label: Mobility
+        value: '0.019'
 limitations:
   - >-
     The CNN reaches a held-out Pearson correlation of 0.506 against Stockfish
@@ -178,10 +231,13 @@ Positions are encoded as **8x8x12 planes**, one plane per piece type per colour.
 This keeps the spatial structure of the board intact, so convolution operates
 over real board geometry rather than a flattened vector.
 
-The network stacks three convolutional layers at 64, 128 and 128 filters, then
-batch normalisation, a flatten, a 256-unit dense layer, dropout at 0.3, and a
-single output. It is trained to predict Stockfish centipawn evaluations across
-roughly 50,000 positions at depth 8.
+The network is a small convolutional stack, widening as it goes and ending in
+a single scalar: the layer sizes are set out in the table below. It is
+deliberately modest, because the job is to approximate an evaluation function
+that already exists rather than to discover one, and a larger model would have
+bought accuracy at the cost of the training budget the project had. It is
+trained to predict Stockfish centipawn evaluations across roughly 50,000
+positions at depth 8.
 
 On held-out positions it reaches a Pearson correlation of **0.506**. That is a
 correlation between its predictions and Stockfish's, and it is reported that way
@@ -190,9 +246,12 @@ engine picks the same move.
 
 ## The classical layer
 
-Two conventional models run alongside the network. A random forest of 500 trees
-at maximum depth 12 predicts future space control. A multilayer perceptron at
-256 to 128 to 64 units, over standard-scaled inputs, predicts game outcome.
+Two conventional models run alongside the network, each answering a question
+the CNN is not asked. A random forest predicts future space control, which is
+a structured, feature-shaped problem where an ensemble of shallow trees is a
+better fit than a convolution over the board. A multilayer perceptron predicts
+game outcome from scaled inputs, which is the one place a small dense model
+earns its keep. Their configurations are in the table below.
 
 These cover signals that are well characterised in chess theory and do not need
 to be rediscovered by a network.
@@ -202,14 +261,17 @@ to be rediscovered by a network.
 Ridge regression combines the normalised CNN score with material, space, centre
 control and mobility into a single hybrid score.
 
-The fitted weights are the most informative artefact the project produced. The
-normalised CNN score carries a weight of 330.9, material 32.4, centre control
-5.17, space 0.79 and mobility 0.019. Read together, they say the learned
-evaluation dominates, material remains a meaningful correction, and mobility
-contributes almost nothing once the other signals are present.
+The fitted weights are the most informative artefact the project produced, and
+they are set out in the table below. They are coefficients rather than
+importances: only the CNN score is normalised, so the five numbers sit on
+different scales and cannot be ranked against one another. What they do show,
+read with that caveat, is that the learned evaluation dominates, material
+remains a meaningful correction, and mobility contributes almost nothing once
+the other signals are present.
 
 A linear fusion step was chosen precisely so that this could be stated as a fact
-rather than guessed at.
+rather than guessed at. A second network would have hidden exactly the numbers
+this section exists to print.
 
 ## Reranking
 

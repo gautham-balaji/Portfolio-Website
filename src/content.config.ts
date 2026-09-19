@@ -181,6 +181,44 @@ const decision = z.object({
   stage: slug.optional(),
 });
 
+/**
+ * A technical parameter group (P2.3).
+ *
+ * Configuration the project documents, moved out of running prose and into a
+ * specification table so it can be scanned and compared. This is relocation
+ * rather than addition: the chess page already stated its headline numbers
+ * three times each, and a table layered on top of unchanged prose would have
+ * made that four.
+ *
+ * Only configuration belongs here. Results stay in `metrics`, where each
+ * value carries the qualifier that stops it being read as something else, and
+ * a parameter row may not repeat a metric's label.
+ *
+ * `note` is the group's own caveat and is the load-bearing field for the
+ * chess ridge coefficients: the fitted weights are on differently scaled
+ * inputs, so the table has to say that their magnitudes are not comparable
+ * rather than let the layout imply a ranking.
+ */
+const parameterRow = z.object({
+  label: z.string(),
+  value: z.string(),
+  note: z.string().optional(),
+});
+
+const parameterGroup = z.object({
+  id: slug,
+  label: z.string(),
+  /**
+   * Markdown heading slug this configuration belongs to, so the table's
+   * caption links to the prose that explains it. Resolved against the
+   * rendered headings in ProjectLayout, as for architecture stages (P2.2):
+   * the slugs do not exist while this schema runs.
+   */
+  section: slug.optional(),
+  note: z.string().optional(),
+  rows: z.array(parameterRow).min(1),
+});
+
 export type ProjectFigureKind = 'screenshot' | 'diagram' | 'chart' | 'map';
 
 /**
@@ -251,6 +289,14 @@ const projects = defineCollection({
         metrics: z.array(metric).default([]),
 
         /**
+         * Documented configuration, as specification tables (P2.3). Present
+         * only where a project actually documents parameters: Legal NLP's
+         * numbers are results rather than configuration, and VERA publishes
+         * none at all and must not be given any.
+         */
+        parameters: z.array(parameterGroup).default([]),
+
+        /**
          * Stated limitations. Required in practice for every project page:
          * MASTER_CONTENT.md §23 defines a boundary for all four projects, and
          * stating it is what makes the rest credible.
@@ -292,6 +338,38 @@ const projects = defineCollection({
             message: `decision "${miss.title}" references unknown stage "${miss.stage}"`,
             path: ['decisions'],
           });
+        }
+      })
+      /* P2.3. Parameter groups are addressed by id and must not collide, and
+         a parameter must not restate a measurement: the two blocks sit three
+         apart on the page and the same label in both reads as the page
+         contradicting itself about what kind of number it is. */
+      .superRefine((value, ctx) => {
+        const ids = value.parameters.map((group) => group.id);
+        const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
+        if (duplicates.length > 0) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `duplicate parameter group ids: ${[...new Set(duplicates)].join(', ')}`,
+            path: ['parameters'],
+          });
+        }
+
+        const metricLabels = new Set(
+          value.metrics.map((entry) => entry.label.trim().toLowerCase()),
+        );
+        for (const group of value.parameters) {
+          for (const row of group.rows) {
+            if (metricLabels.has(row.label.trim().toLowerCase())) {
+              ctx.addIssue({
+                code: 'custom',
+                message:
+                  `parameter "${group.id}.${row.label}" repeats a measurement label; ` +
+                  `configuration and results must not claim the same name`,
+                path: ['parameters'],
+              });
+            }
+          }
         }
       }),
 });

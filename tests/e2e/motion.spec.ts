@@ -529,3 +529,47 @@ test.describe('contact lead', () => {
     await expect(page.locator('.project-contact .contact-link')).toHaveCount(3);
   });
 });
+
+test.describe('parameter tables', () => {
+  test('are fully readable with JavaScript disabled', async ({ browser }) => {
+    // Specification tables are markup. Nothing here may need a script.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto('/projects/chess-engine');
+
+    await expect(page.locator('.parameter-table')).toHaveCount(3);
+    await expect(page.locator('.parameter-row')).toHaveCount(16);
+
+    const invisible = await page
+      .locator('.parameter-row')
+      .evaluateAll(
+        (els) => els.filter((el) => Number(getComputedStyle(el).opacity) < 0.05).length,
+      );
+    expect(invisible).toBe(0);
+
+    // Following a caption link needs no scripting either.
+    await page.locator('.parameter-caption-link').first().click();
+    expect(new URL(page.url()).hash).toBe('#board-representation-and-the-network');
+
+    await context.close();
+  });
+
+  test('stay visible and still under reduced motion', async ({ browser }) => {
+    const context = await browser.newContext({
+      reducedMotion: 'reduce',
+      viewport: { width: 1440, height: 900 },
+    });
+    const page = await context.newPage();
+    await page.goto('/projects/geocounterfactual');
+
+    const hidden = await page
+      .locator('.parameter-row')
+      .evaluateAll(
+        (els) => els.filter((el) => Number(getComputedStyle(el).opacity) < 0.05).length,
+      );
+    expect(hidden).toBe(0);
+    await expect(page.locator('.parameter-table')).toHaveCount(1);
+
+    await context.close();
+  });
+});

@@ -26,9 +26,10 @@ import ArchitectureStages from '@/components/project/ArchitectureStages.astro';
 import MetricList from '@/components/project/MetricList.astro';
 import DecisionList from '@/components/project/DecisionList.astro';
 import SectionIndex from '@/components/project/SectionIndex.astro';
+import ParameterTable from '@/components/project/ParameterTable.astro';
 import ContactLead from '@/components/contact/ContactLead.astro';
 import { detailView, stageLabels } from '@/lib/architecture';
-import { unknownSectionRefs } from '@/lib/crossReferences';
+import { unknownRefs, unknownSectionRefs } from '@/lib/crossReferences';
 
 interface Props {
   project: CollectionEntry<'projects'>;
@@ -70,16 +71,26 @@ const sectionTitles = Object.fromEntries(
   headings.filter((heading) => heading.depth === 2).map((h) => [h.slug, h.text]),
 );
 
-if (architecture) {
-  const missing = unknownSectionRefs(architecture.stages, Object.keys(sectionTitles));
-  if (missing.length > 0) {
-    throw new Error(
-      `${project.id}: architecture references unknown prose sections ` +
-        `(${missing.map((m) => `${m.id} -> "${m.section}"`).join(', ')}). ` +
-        `Available headings: ${Object.keys(sectionTitles).join(', ')}.`,
-    );
-  }
+function assertSections(kind: string, missing: { id: string; section: string }[]) {
+  if (missing.length === 0) return;
+  throw new Error(
+    `${project.id}: ${kind} references unknown prose sections ` +
+      `(${missing.map((m) => `${m.id} -> "${m.section}"`).join(', ')}). ` +
+      `Available headings: ${Object.keys(sectionTitles).join(', ')}.`,
+  );
 }
+
+if (architecture) {
+  assertSections(
+    'architecture',
+    unknownSectionRefs(architecture.stages, Object.keys(sectionTitles)),
+  );
+}
+
+/* P2.3: parameter groups reference prose the same way, and are checked here
+   for the same reason: the heading slugs do not exist until the body is
+   rendered. */
+assertSections('parameters', unknownRefs(d.parameters, Object.keys(sectionTitles)));
 
 const decisionStageLabels = stageLabels(project);
 ---
@@ -189,6 +200,31 @@ const decisionStageLabels = stageLabels(project);
         </div>
       </div>
     </div>
+
+    {/* P2.3: the configuration, between the narrative that explains it and
+        the decisions that justify it. Only projects that document parameters
+        render this; Legal NLP's numbers are results rather than
+        configuration, and VERA publishes none. */}
+    {d.parameters.length > 0 && (
+      <section class="container block parameters-block" aria-labelledby="parameters-heading">
+        <h2 id="parameters-heading" class="label block-heading">
+          Parameters
+        </h2>
+        <div class="grid-12 parameters-grid">
+          {d.parameters.map((group) => (
+            <div class="parameters-item" data-reveal>
+              <ParameterTable
+                label={group.label}
+                note={group.note}
+                rows={group.rows}
+                section={group.section}
+                sectionLabel={group.section ? sectionTitles[group.section] : undefined}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
 
     {d.decisions.length > 0 && (
       <div class="container block">
@@ -313,8 +349,13 @@ const decisionStageLabels = stageLabels(project);
   .prose,
   .limitations,
   .section-index-wrap,
-  .project-contact-lead {
+  .project-contact-lead,
+  .parameters-item {
     grid-column: 1 / -1;
+  }
+
+  .parameters-grid {
+    row-gap: clamp(2rem, 5vw, 3rem);
   }
 
   /* Stacked below the rail breakpoint: contents, then the narrative. */
@@ -428,6 +469,13 @@ const decisionStageLabels = stageLabels(project);
     }
 
     .project-contact-lead {
+      grid-column: 1 / span 7;
+    }
+
+    /* The reading column, matching the prose and the overview. Width is
+       decided after measuring, not in advance: see the note by the
+       two-up rule below. */
+    .parameters-item {
       grid-column: 1 / span 7;
     }
 

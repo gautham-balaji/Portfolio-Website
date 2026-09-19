@@ -96,3 +96,20 @@ export function unknownSectionRefs(
   const known = new Set(headingSlugs);
   return sectionRefs(stages).filter((ref) => !known.has(ref.section));
 }
+
+/**
+ * Anything else that points at a prose section by slug (P2.3).
+ *
+ * Parameter groups carry the same kind of reference as an architecture stage
+ * but are a flat list rather than a nested one, so they get their own
+ * resolver instead of being forced through the stage shape.
+ */
+export function unknownRefs(
+  items: readonly ReferencedNode[],
+  headingSlugs: readonly string[],
+): { id: string; section: string }[] {
+  const known = new Set(headingSlugs);
+  return items
+    .filter((item) => item.section && !known.has(item.section))
+    .map((item) => ({ id: item.id, section: item.section as string }));
+}

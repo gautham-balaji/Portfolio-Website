@@ -1,0 +1,170 @@
+---
+/**
+ * A technical parameter table (P2.3).
+ *
+ * Documented configuration, set as a specification rather than narrated. It
+ * is a real <table> because that is what it is: the parameter name is a row
+ * header and the value is its cell, and a screen reader needs that
+ * relationship to read "Dropout, 0.3" rather than two unrelated strings.
+ *
+ * Deliberately not a MetricList. A measurement is a result and is set at
+ * display scale; a parameter is configuration and should read as a
+ * specification line, quiet enough that the measurements block three
+ * sections below still carries the page's numbers.
+ *
+ * Per §50 and §51 the treatment is mono values, a small all-caps caption,
+ * hairline row rules and nothing else: no card, no fill, no bar, no
+ * derived column. The chess ridge coefficients are the reason that last one
+ * is a rule rather than a preference (see their `note`).
+ */
+interface Row {
+  label: string;
+  value: string;
+  note?: string | undefined;
+}
+
+interface Props {
+  label: string;
+  /** The group's own caveat, printed under the caption. */
+  note?: string | undefined;
+  rows: Row[];
+  /** Prose heading slug this configuration belongs to. */
+  section?: string | undefined;
+  /** That heading's text, for the caption link's accessible name. */
+  sectionLabel?: string | undefined;
+}
+
+const { label, note, rows, section, sectionLabel } = Astro.props;
+---
+
+<div class="parameters">
+  {/* The table scrolls inside its own container if a value ever outgrows a
+      narrow viewport, so a long string can never scroll the page (§33). */}
+  <div class="parameters-scroll">
+    <table class="parameter-table">
+      <caption class="parameter-caption">
+        {section && sectionLabel ? (
+          <a class="parameter-caption-link" href={`#${section}`}>
+            <span class="label">{label}</span>
+            <span class="sr-only">, read {sectionLabel}</span>
+          </a>
+        ) : (
+          <span class="label">{label}</span>
+        )}
+      </caption>
+
+      <tbody>
+        {rows.map((row) => (
+          <tr class="parameter-row">
+            <th scope="row" class="parameter-label">
+              {row.label}
+            </th>
+            <td class="parameter-value">
+              {row.value}
+              {row.note && <span class="parameter-row-note">{row.note}</span>}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {note && <p class="parameter-note">{note}</p>}
+</div>
+
+<style>
+  .parameters {
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .parameters-scroll {
+    overflow-x: auto;
+  }
+
+  .parameter-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .parameter-caption {
+    text-align: left;
+    color: var(--color-oxide-text);
+    margin-bottom: 0.875rem;
+  }
+
+  .parameter-caption-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-block: -0.75rem;
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--color-graphite-rule);
+    text-underline-offset: 0.3em;
+    transition:
+      text-decoration-color var(--motion-fast) var(--ease-standard),
+      text-decoration-thickness var(--motion-fast) var(--ease-standard);
+  }
+
+  .parameter-caption-link:hover,
+  .parameter-caption-link:focus-visible {
+    text-decoration-color: var(--color-oxide-rule);
+    text-decoration-thickness: 2px;
+  }
+
+  .parameter-row {
+    border-top: var(--border-thin) solid var(--color-paper-soft);
+  }
+
+  .parameter-row:first-child {
+    border-top: 0;
+  }
+
+  .parameter-label {
+    padding: 0.6875rem 1.5rem 0.6875rem 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-sm);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-graphite-text);
+    vertical-align: baseline;
+    white-space: nowrap;
+  }
+
+  .parameter-value {
+    padding: 0.6875rem 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    line-height: 1.5;
+    /* Figures line up down the column. The values are specifications, so
+       they are read against each other. */
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+    vertical-align: baseline;
+    width: 100%;
+  }
+
+  .parameter-row-note {
+    display: block;
+    margin-top: 0.25rem;
+    font-family: var(--font-body);
+    font-size: var(--text-meta-sm);
+    line-height: 1.5;
+    color: var(--color-graphite-text);
+  }
+
+  /* The group's caveat. Sits under the table rather than above it, in the
+     position a footnote would take in a specification document. */
+  .parameter-note {
+    margin-top: 0.875rem;
+    padding-top: 0.6875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+    font-size: var(--text-meta);
+    line-height: 1.55;
+    color: var(--color-graphite-text);
+    max-width: 66ch;
+  }
+</style>

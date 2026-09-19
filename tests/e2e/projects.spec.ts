@@ -560,3 +560,206 @@ test.describe('section index placement', () => {
     }
   });
 });
+
+/**
+ * P2.3: technical parameters as specification tables.
+ *
+ * Configuration the projects document, relocated out of prose. The tests
+ * guard three things: that only the two projects with documented
+ * configuration have tables at all, that the markup is a real table rather
+ * than a grid of divs, and that nothing in the presentation turns ridge
+ * coefficients into a ranking.
+ */
+const PARAMETERS: { slug: string; tables: number; rows: number }[] = [
+  { slug: 'chess-engine', tables: 3, rows: 16 },
+  { slug: 'legal-nlp', tables: 0, rows: 0 },
+  { slug: 'vera', tables: 0, rows: 0 },
+  { slug: 'geocounterfactual', tables: 1, rows: 8 },
+];
+
+for (const project of PARAMETERS) {
+  test.describe(`${project.slug} parameters`, () => {
+    test('renders the expected number of tables, or none at all', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      await expect(page.locator('.parameter-table')).toHaveCount(project.tables);
+      await expect(page.locator('.parameters-block')).toHaveCount(project.tables > 0 ? 1 : 0);
+    });
+
+    if (project.tables === 0) return;
+
+    test('uses real table semantics throughout', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+
+      const shape = await page.evaluate(() =>
+        [...document.querySelectorAll('table.parameter-table')].map((table) => {
+          const rows = [...table.querySelectorAll('tbody tr')];
+          return {
+            caption: (table.querySelector('caption')?.textContent ?? '').trim().length,
+            rows: rows.length,
+            rowHeaders: rows.filter(
+              (r) => r.querySelector('th')?.getAttribute('scope') === 'row',
+            ).length,
+            cells: rows.filter((r) => r.querySelector('td')).length,
+            presentation: table.getAttribute('role'),
+          };
+        }),
+      );
+
+      expect(shape).toHaveLength(project.tables);
+      let total = 0;
+      for (const t of shape) {
+        expect(t.caption).toBeGreaterThan(0);
+        expect(t.rowHeaders).toBe(t.rows);
+        expect(t.cells).toBe(t.rows);
+        expect(t.presentation).toBeNull();
+        total += t.rows;
+      }
+      expect(total).toBe(project.rows);
+    });
+
+    test('sets values in tabular figures', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      const variants = await page
+        .locator('.parameter-value')
+        .evaluateAll((els) => [
+          ...new Set(els.map((el) => getComputedStyle(el).fontVariantNumeric)),
+        ]);
+      expect(variants).toEqual(['tabular-nums']);
+    });
+
+    test('sits between the narrative and the decisions', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      const order = await page.evaluate(() => {
+        const top = (sel: string) =>
+          document.querySelector(sel)!.getBoundingClientRect().top + window.scrollY;
+        return {
+          prose: top('.prose'),
+          params: top('.parameters-block'),
+          decisions: top('.decisions-wrap'),
+          metrics: top('.metrics'),
+        };
+      });
+      expect(order.params).toBeGreaterThan(order.prose);
+      expect(order.params).toBeLessThan(order.decisions);
+      expect(order.decisions).toBeLessThan(order.metrics);
+    });
+
+    test('links each caption to the prose section it documents', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      const links = page.locator('.parameter-caption-link');
+      await expect(links).toHaveCount(project.tables);
+
+      for (const href of await links.evaluateAll((els) =>
+        els.map((el) => (el as HTMLAnchorElement).getAttribute('href')),
+      )) {
+        expect(href).toMatch(/^#[a-z0-9-]+$/);
+        await expect(page.locator(href!)).toHaveCount(1);
+      }
+    });
+
+    test('draws no chart, bar or proportional visualisation', async ({ page }) => {
+      // DESIGN_SYSTEM bans progress bars, and ridge coefficients on
+      // differently scaled inputs must never be shown as comparable lengths.
+      await page.goto(`/projects/${project.slug}`);
+
+      await expect(page.locator('.parameters-block progress')).toHaveCount(0);
+      await expect(page.locator('.parameters-block meter')).toHaveCount(0);
+      await expect(page.locator('.parameters-block svg')).toHaveCount(0);
+      await expect(page.locator('.parameters-block canvas')).toHaveCount(0);
+
+      const proportional = await page.evaluate(
+        () =>
+          [...document.querySelectorAll('.parameters-block *')].filter((el) =>
+            /width\s*:\s*[\d.]+%/.test(el.getAttribute('style') ?? ''),
+          ).length,
+      );
+      expect(proportional).toBe(0);
+    });
+
+    test('scrolls inside its own container rather than the page', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      const containers = await page
+        .locator('.parameters-scroll')
+        .evaluateAll((els) => els.map((el) => getComputedStyle(el).overflowX));
+      expect(containers.length).toBeGreaterThan(0);
+      expect([...new Set(containers)]).toEqual(['auto']);
+    });
+  });
+}
+
+test('the chess ridge table states the coefficients without ranking them', async ({
+  page,
+}) => {
+  await page.goto('/projects/chess-engine');
+
+  const table = page.locator('.parameter-table').filter({ hasText: 'Ridge fusion' });
+  await expect(table).toHaveCount(1);
+
+  const values = await table
+    .locator('.parameter-value')
+    .evaluateAll((els) => els.map((el) => el.firstChild?.textContent?.trim()));
+  expect(values).toEqual(['330.9', '32.4', '5.17', '0.79', '0.019']);
+
+  const block = (await page.locator('.parameters-block').innerText()).toLowerCase();
+  expect(block).toContain('not feature importance');
+  expect(block).toContain('normalised');
+  expect(block).not.toContain('most important');
+  expect(block).not.toMatch(/\brank/);
+  expect(block).not.toContain('%');
+});
+
+test('chess states each relocated number once in the tables, not again in prose', async ({
+  page,
+}) => {
+  // Relocation, not duplication: before P2.3 the page stated its headline
+  // numbers three times each, and the risk of adding a table was a fourth.
+  await page.goto('/projects/chess-engine');
+
+  const zones = await page.evaluate(() => {
+    const read = (sel: string) =>
+      (document.querySelector(sel) as HTMLElement)?.innerText ?? '';
+    return {
+      prose: read('.prose'),
+      params: read('.parameters-block'),
+      main: read('main'),
+    };
+  });
+
+  // Configuration now lives only in the tables.
+  for (const moved of ['Conv2D', '500 trees', 'StandardScaler']) {
+    expect(zones.params, `${moved} in tables`).toContain(moved);
+    expect(zones.prose, `${moved} must have left the prose`).not.toContain(moved);
+  }
+
+  // The ridge coefficients appear in the table and in the decision that
+  // argues for a linear model, and nowhere else.
+  expect(zones.main.split('330.9').length - 1).toBeLessThanOrEqual(2);
+  expect(zones.prose).not.toContain('330.9');
+
+  // The factual tripwires are untouched.
+  expect(zones.main).toContain('0.506');
+  expect(zones.main).toContain('Pearson');
+  expect(zones.main).not.toMatch(/50\.6\s*%/);
+});
+
+test('geocounterfactual keeps its constraint reasoning in prose and its values in the table', async ({
+  page,
+}) => {
+  await page.goto('/projects/geocounterfactual');
+
+  const params = await page.locator('.parameters-block').innerText();
+  const prose = await page.locator('.prose').innerText();
+
+  expect(params).toContain('2.5 degrees');
+  expect(prose).not.toContain('2.5');
+  expect(prose).toContain('gravity does not permit it');
+
+  // The undocumented terms must never appear.
+  for (const absent of ['MNDWI', 'focal mean', 'UTM', '/api/']) {
+    expect(params, `must not surface ${absent}`).not.toContain(absent);
+  }
+  // Simulation time is current behaviour, not configuration.
+  expect(params).not.toContain('146');
+  // The NDVI threshold is not published, and no number may stand in for it.
+  expect(params).toContain('not published');
+});
