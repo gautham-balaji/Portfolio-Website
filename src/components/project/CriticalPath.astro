@@ -1,0 +1,187 @@
+---
+/**
+ * The documented response path (P2.4, VERA).
+ *
+ * VERA's architecture shows the order stages run in. What it cannot show is
+ * which of them the caller is waiting on, and that is the project's whole
+ * engineering argument: on a phone call the only thing that matters is the
+ * gap between the caller finishing a sentence and hearing the first syllable
+ * back.
+ *
+ * The block is deliberately asymmetric. The naive handling is documented as a
+ * sequence ("the system finishes deciding what to say, then waits to render
+ * it, then speaks"), so it is rendered as one. The change is documented only
+ * as a change of position: text-to-speech work was moved off the blocking
+ * path, and the response cycle no longer waits on audio rendering. Nothing in
+ * the source says what replaced it, so the second half is sentences rather
+ * than a second sequence. A parallel track drawn beside the first would be
+ * asserting concurrency that has never been described.
+ *
+ * No figures appear anywhere in this block. No latency was ever formally
+ * measured, and the project's own limitations say that quoting a number would
+ * be an invention (MASTER_CONTENT.md §10).
+ */
+interface Path {
+  label: string;
+  steps: string[];
+  note?: string | undefined;
+}
+
+interface Outcome {
+  label: string;
+  statements: string[];
+}
+
+interface Props {
+  paths: Path[];
+  outcome: Outcome;
+  note?: string | undefined;
+}
+
+const { paths, outcome, note } = Astro.props;
+
+const pathId = (label: string) => `path-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+---
+
+<div class="critical-path">
+  {paths.map((path) => (
+    <section class="cp-path" aria-labelledby={pathId(path.label)}>
+      <p class="label cp-label" id={pathId(path.label)}>
+        {path.label}
+      </p>
+
+      <ol class="cp-steps">
+        {path.steps.map((step) => (
+          <li class="cp-step">{step}</li>
+        ))}
+      </ol>
+
+      {path.note && <p class="cp-note">{path.note}</p>}
+    </section>
+  ))}
+
+  {/* The documented decision, as text. Not a second sequence: see the module
+      comment above. */}
+  <section class="cp-path cp-outcome" aria-labelledby={pathId(outcome.label)}>
+    <p class="label cp-label" id={pathId(outcome.label)}>
+      {outcome.label}
+    </p>
+
+    <ul class="cp-statements">
+      {outcome.statements.map((statement) => (
+        <li class="cp-statement">{statement}</li>
+      ))}
+    </ul>
+  </section>
+
+  {note && <p class="cp-footnote">{note}</p>}
+</div>
+
+<style>
+  .critical-path {
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .cp-path {
+    padding-block: clamp(1.125rem, 3vw, 1.625rem);
+    border-top: var(--border-thin) solid var(--color-paper-soft);
+  }
+
+  .cp-path:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .cp-label {
+    color: var(--color-graphite-text);
+  }
+
+  .cp-outcome .cp-label {
+    color: var(--color-oxide-text);
+  }
+
+  /* Numbered, because the order is the information. The counter is written
+     out rather than left to a marker so it can take the mono treatment the
+     rest of the site gives sequence numbers. */
+  .cp-steps {
+    list-style: none;
+    counter-reset: cp-step;
+    margin: 0.875rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .cp-step {
+    counter-increment: cp-step;
+    position: relative;
+    padding: 0.5rem 0 0.5rem 2.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    line-height: 1.45;
+    color: var(--color-ink);
+    border-top: var(--border-thin) solid var(--color-paper-soft);
+  }
+
+  .cp-step:first-child {
+    border-top: 0;
+  }
+
+  .cp-step::before {
+    content: counter(cp-step, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    font-size: var(--text-meta-sm);
+    letter-spacing: 0.1em;
+    color: var(--color-graphite-text);
+  }
+
+  .cp-note {
+    margin-top: 0.75rem;
+    font-size: var(--text-meta);
+    line-height: 1.55;
+    color: var(--color-graphite-text);
+    max-width: 62ch;
+  }
+
+  .cp-statements {
+    list-style: none;
+    margin: 0.875rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.625rem;
+  }
+
+  .cp-statement {
+    position: relative;
+    padding-left: 2.5rem;
+    font-size: var(--text-body);
+    line-height: 1.55;
+    color: var(--color-ink);
+    max-width: 62ch;
+  }
+
+  /* A rule rather than a bullet or an arrow: the same mark the limitations
+     list uses, and it points nowhere. */
+  .cp-statement::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.75em;
+    width: 1.25rem;
+    height: 1px;
+    background-color: var(--color-oxide-rule);
+  }
+
+  .cp-footnote {
+    margin-top: 0.875rem;
+    padding-top: 0.6875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+    font-size: var(--text-meta);
+    line-height: 1.55;
+    color: var(--color-graphite-text);
+    max-width: 66ch;
+  }
+</style>

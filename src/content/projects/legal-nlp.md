@@ -112,6 +112,31 @@ metrics:
   - label: Query latency
     value: < 1 s
     note: Retrieval response time.
+signature:
+  kind: graph-schema
+  note: >-
+    The vocabulary the extraction stage has to produce and the retrieval stage
+    reads back. Which node types a given relationship connects is not
+    published, so the schema is stated as sets rather than drawn as a graph.
+  sets:
+    - label: Node types
+      items:
+        - Cases
+        - Statutes
+        - Sections
+        - Courts
+        - Judges
+    - label: Relationship types
+      items:
+        - CITES
+        - APPLIES
+        - DECIDED_BY
+        - INVOLVES
+    - label: Graph analytics
+      items:
+        - PageRank
+        - Centrality
+        - Community detection
 limitations:
   - >-
     These are project evaluation figures measured during development, not
@@ -159,8 +184,11 @@ text. It is in the connections between documents.
 
 ## Extraction
 
-Each judgment passes through a custom legal named-entity recognition stage,
-which identifies cases, statutes, sections, courts and judges.
+Each judgment passes through a custom legal named-entity recognition stage.
+Its job is to turn continuous prose into the typed entities the graph schema
+below expects, which is the step that decides what the rest of the system is
+able to reason about at all: anything the extractor misses is not merely
+absent from the index, it is absent from the structure.
 
 Statutory references are handled separately. Citations to the IPC, the CrPC and
 similar codes follow strict formats, so they are matched by explicit pattern
@@ -171,13 +199,18 @@ A relationship extraction stage then connects the entities to each other.
 
 ## The graph
 
-Extracted entities become nodes. Relationships become typed edges: `CITES`,
-`APPLIES`, `DECIDED_BY` and `INVOLVES`.
+Extracted entities become nodes, and the relationships between them become
+typed edges rather than undifferentiated links. The typing is what makes the
+graph queryable: an untyped edge can only say that two documents are related,
+where a typed one says how, and that is the difference between finding a case
+that mentions a statute and finding a case that applies it.
 
-Once the corpus is a graph rather than a pile of documents, structural questions
-become answerable. PageRank surfaces judgments that the network treats as
-authoritative. Centrality measures identify the cases that hold regions of the
-graph together. Community detection groups clusters of related law.
+Once the corpus is a graph rather than a pile of documents, structural
+questions become answerable, and the analytics listed in the schema below are
+the ones the project runs. Each asks something about a judgment's position in
+the network rather than about its wording: which judgments the network treats
+as authoritative, which ones hold a region of the graph together, and which
+ones cluster into a body of related law.
 
 None of these are derivable from any single judgment's text.
 

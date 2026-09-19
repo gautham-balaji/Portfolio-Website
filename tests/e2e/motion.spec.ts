@@ -573,3 +573,51 @@ test.describe('parameter tables', () => {
     await context.close();
   });
 });
+
+test.describe('signature blocks', () => {
+  test('render fully with JavaScript disabled', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto('/projects/legal-nlp');
+    await expect(page.locator('.schema-set')).toHaveCount(3);
+    await expect(page.locator('.schema-item')).toHaveCount(12);
+
+    await page.goto('/projects/vera');
+    await expect(page.locator('.cp-step')).toHaveCount(5);
+    await expect(page.locator('.cp-statement')).toHaveCount(2);
+
+    const invisible = await page
+      .locator('.cp-step, .cp-statement')
+      .evaluateAll(
+        (els) => els.filter((el) => Number(getComputedStyle(el).opacity) < 0.05).length,
+      );
+    expect(invisible).toBe(0);
+
+    await context.close();
+  });
+
+  test('stay visible and still under reduced motion', async ({ browser }) => {
+    const context = await browser.newContext({
+      reducedMotion: 'reduce',
+      viewport: { width: 1440, height: 900 },
+    });
+    const page = await context.newPage();
+
+    for (const [slug, selector, count] of [
+      ['legal-nlp', '.schema-item', 12],
+      ['vera', '.cp-step', 5],
+    ] as const) {
+      await page.goto(`/projects/${slug}`);
+      await expect(page.locator(selector)).toHaveCount(count);
+      const hidden = await page
+        .locator(selector)
+        .evaluateAll(
+          (els) => els.filter((el) => Number(getComputedStyle(el).opacity) < 0.05).length,
+        );
+      expect(hidden, `${slug} ${selector}`).toBe(0);
+    }
+
+    await context.close();
+  });
+});

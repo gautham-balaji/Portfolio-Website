@@ -93,6 +93,28 @@ decisions:
       Memory is kept in a structured form to maintain contextual continuity
       across a session, so the caller does not have to restate what they have
       already said.
+signature:
+  kind: critical-path
+  note: >-
+    No timings appear here. Responsiveness was improved, but it was never
+    formally measured, so this records where the work sits in the cycle rather
+    than how long any of it takes.
+  paths:
+    - label: Handled naively
+      note: >-
+        Every step is blocking: the caller is waiting through all of it,
+        including the audio rendering at the end.
+      steps:
+        - Caller finishes speaking
+        - Understanding and retrieval
+        - Response decided
+        - Speech rendered
+        - Audio returned to the caller
+  outcome:
+    label: As built
+    statements:
+      - Speech generation was moved off the blocking path.
+      - The response cycle no longer waits on audio rendering.
 limitations:
   - >-
     VERA is a hackathon prototype. It is not deployed, has no public URL, and

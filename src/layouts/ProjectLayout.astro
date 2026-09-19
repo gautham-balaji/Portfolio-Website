@@ -27,6 +27,8 @@ import MetricList from '@/components/project/MetricList.astro';
 import DecisionList from '@/components/project/DecisionList.astro';
 import SectionIndex from '@/components/project/SectionIndex.astro';
 import ParameterTable from '@/components/project/ParameterTable.astro';
+import GraphSchema from '@/components/project/GraphSchema.astro';
+import CriticalPath from '@/components/project/CriticalPath.astro';
 import ContactLead from '@/components/contact/ContactLead.astro';
 import { detailView, stageLabels } from '@/lib/architecture';
 import { unknownRefs, unknownSectionRefs } from '@/lib/crossReferences';
@@ -226,6 +228,34 @@ const decisionStageLabels = stageLabels(project);
       </section>
     )}
 
+    {/* P2.4: one project-specific artifact, where a project documents
+        something none of the shared blocks can carry. Legal NLP gets its
+        graph vocabulary, which §55 calls that project's visual identity and
+        which had no representation at all; VERA gets the response path,
+        because the architecture shows what order stages run in but not which
+        of them the caller is waiting on. Chess and GeoCounterfactual declare
+        none: both would be restating something already on the page. */}
+    {d.signature && (
+      <section class="container block signature-block" aria-labelledby="signature-heading">
+        <h2 id="signature-heading" class="label block-heading">
+          {d.signature.kind === 'graph-schema' ? 'Graph schema' : 'Response path'}
+        </h2>
+        <div class="grid-12">
+          <div class="signature-item" data-reveal>
+            {d.signature.kind === 'graph-schema' ? (
+              <GraphSchema sets={d.signature.sets} note={d.signature.note} />
+            ) : (
+              <CriticalPath
+                paths={d.signature.paths}
+                outcome={d.signature.outcome}
+                note={d.signature.note}
+              />
+            )}
+          </div>
+        </div>
+      </section>
+    )}
+
     {d.decisions.length > 0 && (
       <div class="container block">
         <div class="grid-12">
@@ -350,7 +380,8 @@ const decisionStageLabels = stageLabels(project);
   .limitations,
   .section-index-wrap,
   .project-contact-lead,
-  .parameters-item {
+  .parameters-item,
+  .signature-item {
     grid-column: 1 / -1;
   }
 
@@ -475,7 +506,8 @@ const decisionStageLabels = stageLabels(project);
     /* The reading column, matching the prose and the overview. Width is
        decided after measuring, not in advance: see the note by the
        two-up rule below. */
-    .parameters-item {
+    .parameters-item,
+    .signature-item {
       grid-column: 1 / span 7;
     }
 

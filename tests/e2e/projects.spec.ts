@@ -763,3 +763,196 @@ test('geocounterfactual keeps its constraint reasoning in prose and its values i
   // The NDVI threshold is not published, and no number may stand in for it.
   expect(params).toContain('not published');
 });
+
+/**
+ * P2.4: project-specific signature blocks.
+ *
+ * Two projects have one and two deliberately do not, so the absences are
+ * asserted as firmly as the presences. The two blocks also have opposite
+ * failure modes: Legal NLP must never draw a graph whose edge endpoints are
+ * undocumented, and VERA must never imply a measurement or a mechanism.
+ */
+const SIGNATURES: {
+  slug: string;
+  kind: 'graph-schema' | 'critical-path' | null;
+  parameters: number;
+}[] = [
+  { slug: 'chess-engine', kind: null, parameters: 3 },
+  { slug: 'legal-nlp', kind: 'graph-schema', parameters: 0 },
+  { slug: 'vera', kind: 'critical-path', parameters: 0 },
+  { slug: 'geocounterfactual', kind: null, parameters: 1 },
+];
+
+for (const project of SIGNATURES) {
+  test.describe(`${project.slug} signature`, () => {
+    test('renders one signature block, or none', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      await expect(page.locator('.signature-block')).toHaveCount(project.kind ? 1 : 0);
+      await expect(page.locator('.schema')).toHaveCount(
+        project.kind === 'graph-schema' ? 1 : 0,
+      );
+      await expect(page.locator('.critical-path')).toHaveCount(
+        project.kind === 'critical-path' ? 1 : 0,
+      );
+      // P2.3 must be untouched by P2.4.
+      await expect(page.locator('.parameter-table')).toHaveCount(project.parameters);
+    });
+
+    test('keeps one h1 and a valid heading order', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      await expect(page.locator('main h1')).toHaveCount(1);
+      const levels = await page.evaluate(() =>
+        [...document.querySelectorAll('main h1, main h2, main h3')].map((h) =>
+          Number(h.tagName[1]),
+        ),
+      );
+      let previous = levels[0] ?? 1;
+      for (const level of levels) {
+        expect(level - previous).toBeLessThanOrEqual(1);
+        previous = level;
+      }
+    });
+
+    test('emits no duplicate element ids', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      const duplicates = await page.evaluate(() => {
+        const ids = [...document.querySelectorAll('[id]')].map((el) => el.id);
+        return [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
+      });
+      expect(duplicates).toEqual([]);
+    });
+
+    if (!project.kind) return;
+
+    test('sits between the narrative and the decisions', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      const order = await page.evaluate(() => {
+        const top = (sel: string) =>
+          document.querySelector(sel)!.getBoundingClientRect().top + window.scrollY;
+        return {
+          prose: top('.prose'),
+          signature: top('.signature-block'),
+          decisions: top('.decisions-wrap'),
+        };
+      });
+      expect(order.signature).toBeGreaterThan(order.prose);
+      expect(order.signature).toBeLessThan(order.decisions);
+    });
+
+    test('draws nothing', async ({ page }) => {
+      // Neither block may become a picture: Legal's endpoints are
+      // undocumented and VERA's mechanism is undocumented.
+      await page.goto(`/projects/${project.slug}`);
+      for (const tag of ['svg', 'canvas', 'progress', 'meter', 'img']) {
+        await expect(page.locator(`.signature-block ${tag}`)).toHaveCount(0);
+      }
+      const proportional = await page.evaluate(
+        () =>
+          [...document.querySelectorAll('.signature-block *')].filter((el) =>
+            /width\s*:\s*[\d.]+%/.test(el.getAttribute('style') ?? ''),
+          ).length,
+      );
+      expect(proportional).toBe(0);
+    });
+  });
+}
+
+test('the legal graph schema states three named vocabularies and connects nothing', async ({
+  page,
+}) => {
+  await page.goto('/projects/legal-nlp');
+
+  const sets = page.locator('.schema-set');
+  await expect(sets).toHaveCount(3);
+
+  const contents = await sets.evaluateAll((els) =>
+    els.map((el) => ({
+      label: el.querySelector('.schema-set-label')?.textContent?.trim(),
+      named: Boolean(el.getAttribute('aria-labelledby')),
+      lists: el.querySelectorAll('ul').length,
+      items: [...el.querySelectorAll('li')].map((li) => li.textContent?.trim()),
+    })),
+  );
+
+  expect(contents.map((s) => s.label)).toEqual([
+    'Node types',
+    'Relationship types',
+    'Graph analytics',
+  ]);
+  expect(contents.every((s) => s.named && s.lists === 1)).toBe(true);
+  expect(contents[0]?.items).toEqual(['Cases', 'Statutes', 'Sections', 'Courts', 'Judges']);
+  expect(contents[1]?.items).toEqual(['CITES', 'APPLIES', 'DECIDED_BY', 'INVOLVES']);
+  expect(contents[2]?.items).toEqual(['PageRank', 'Centrality', 'Community detection']);
+
+  // No arrow, no endpoint pairing, no invented count.
+  const block = await page.locator('.signature-block').innerText();
+  expect(block).not.toMatch(/->|→|⟶/);
+  expect(block).toContain('not published');
+});
+
+test('the vera response path shows one sequence and states the change as text', async ({
+  page,
+}) => {
+  await page.goto('/projects/vera');
+
+  // Exactly one ordered sequence: a second would assert concurrency the
+  // source never describes.
+  const steps = page.locator('.cp-steps');
+  await expect(steps).toHaveCount(1);
+  await expect(page.locator('.cp-step')).toHaveCount(5);
+
+  const ordered = await steps.evaluateAll((els) => els.map((el) => el.tagName));
+  expect(ordered).toEqual(['OL']);
+
+  const statements = await page
+    .locator('.cp-statement')
+    .evaluateAll((els) => els.map((el) => el.textContent?.trim()));
+  expect(statements).toEqual([
+    'Speech generation was moved off the blocking path.',
+    'The response cycle no longer waits on audio rendering.',
+  ]);
+
+  // No authored digit anywhere in the block. The visible 01-05 markers are
+  // CSS counters on the step list, the same ordinal treatment the decisions
+  // and the architecture legend use, and they are not part of the content:
+  // `innerText` does not include generated content, which is exactly the
+  // distinction being asserted. A number that arrived from the content would
+  // be read as a measurement, and none was ever recorded.
+  const block = await page.locator('.signature-block').innerText();
+  expect(block).not.toMatch(/\d/);
+  for (const banned of ['latency', 'parallel', 'concurrent', 'faster', '%', 'ms']) {
+    expect(block.toLowerCase(), `"${banned}" must not appear`).not.toContain(banned);
+  }
+
+  // And the markers really are generated rather than authored, so the check
+  // above is measuring what it claims to.
+  const markers = await page
+    .locator('.cp-step')
+    .first()
+    .evaluate((el) => ({
+      authored: el.textContent ?? '',
+      generated: getComputedStyle(el, '::before').content,
+    }));
+  expect(markers.authored).not.toMatch(/\d/);
+  // Chromium reports the specified value rather than the resolved string,
+  // which is the stronger evidence anyway: the marker is a counter function,
+  // so no digit was ever authored into the content.
+  expect(markers.generated).toContain('counter(');
+});
+
+test('chess and geocounterfactual are unchanged by P2.4', async ({ page }) => {
+  await page.goto('/projects/chess-engine');
+  await expect(page.locator('.signature-block')).toHaveCount(0);
+  await expect(page.locator('.parameter-table')).toHaveCount(3);
+  let body = await page.locator('main').innerText();
+  expect(body).toContain('0.506');
+  expect(body).toContain('Pearson');
+  expect(body).not.toMatch(/50\.6\s*%/);
+
+  await page.goto('/projects/geocounterfactual');
+  await expect(page.locator('.signature-block')).toHaveCount(0);
+  await expect(page.locator('.parameter-table')).toHaveCount(1);
+  body = await page.locator('.parameters-block').innerText();
+  expect(body).toContain('not published');
+  expect(body).not.toContain('146');
+});

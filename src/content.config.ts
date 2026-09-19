@@ -219,6 +219,72 @@ const parameterGroup = z.object({
   rows: z.array(parameterRow).min(1),
 });
 
+/**
+ * The signature block (P2.4).
+ *
+ * One project-specific technical artifact, where a project has something
+ * documented that none of the shared blocks can carry. Deliberately not
+ * present on every project: Chess already states its configuration in three
+ * parameter tables and a fork diagram, and GeoCounterfactual's reject loop is
+ * already drawn, listed in the stage legend and stated in the overview, so a
+ * fourth rendering of either would repeat rather than inform.
+ *
+ * Two kinds, because the two projects that need one need different shapes and
+ * a single generic container would have to invent a common structure they do
+ * not share.
+ */
+
+/**
+ * A documented vocabulary, as named sets (Legal NLP).
+ *
+ * Sets, not a graph. MASTER_CONTENT.md §09 lists the node types, the edge
+ * types and the analytics, but no source anywhere states which node types a
+ * given edge connects. Drawing the graph would mean inventing those endpoints,
+ * so the block states the vocabulary and draws nothing.
+ */
+const graphSchemaSignature = z.object({
+  kind: z.literal('graph-schema'),
+  sets: z
+    .array(
+      z.object({
+        label: z.string(),
+        items: z.array(z.string()).min(1),
+      }),
+    )
+    .min(1),
+  note: z.string().optional(),
+});
+
+/**
+ * A documented response path, before and after one change (VERA).
+ *
+ * `paths` carries only what the source states as a sequence. The "as built"
+ * side is prose rather than a second sequence on purpose: the content
+ * documents that text-to-speech work was moved off the blocking path, and
+ * says nothing whatever about what replaced it. A second ordered list would
+ * assert a mechanism that has never been described.
+ */
+const criticalPathSignature = z.object({
+  kind: z.literal('critical-path'),
+  paths: z
+    .array(
+      z.object({
+        label: z.string(),
+        steps: z.array(z.string()).min(2),
+        note: z.string().optional(),
+      }),
+    )
+    .min(1),
+  /** The documented change, stated as sentences rather than drawn. */
+  outcome: z.object({
+    label: z.string(),
+    statements: z.array(z.string()).min(1),
+  }),
+  note: z.string().optional(),
+});
+
+const signature = z.discriminatedUnion('kind', [graphSchemaSignature, criticalPathSignature]);
+
 export type ProjectFigureKind = 'screenshot' | 'diagram' | 'chart' | 'map';
 
 /**
@@ -295,6 +361,12 @@ const projects = defineCollection({
          * none at all and must not be given any.
          */
         parameters: z.array(parameterGroup).default([]),
+
+        /**
+         * One project-specific technical artifact (P2.4). Optional, and
+         * absent wherever the shared blocks already carry the idea.
+         */
+        signature: signature.optional(),
 
         /**
          * Stated limitations. Required in practice for every project page:
