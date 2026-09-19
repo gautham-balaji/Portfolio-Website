@@ -6,21 +6,47 @@
  * and metadata across a single ruled row. Deliberately text-led and without
  * media, so the flagship above it keeps its visual weight.
  *
- * All information is present at rest. Nothing is revealed by hover (§25, §40).
+ * Everything needed to understand the project is present at rest. The
+ * architecture schematic is the one thing hover and focus add, which §25
+ * sanctions for exactly this element ("preview image appears or changes"),
+ * under its own condition: the row must not require hover to be understood,
+ * and it does not. §40 forbids hover-dependent previews on mobile, so below
+ * the hover breakpoint the schematic is simply always visible.
+ *
  * Where a project has no public repository, no link is rendered and the reason
  * is stated, because MASTER_CONTENT.md §10 and §23 forbid inventing URLs.
  */
 import type { CollectionEntry } from 'astro:content';
+import RowSchematic from '@/components/project/RowSchematic.astro';
+import { ARCHITECTURE_DIAGRAMS } from '@/lib/architectureDiagrams';
 
 interface Props {
   project: CollectionEntry<'projects'>;
 }
 
 const { project } = Astro.props;
-const { title, order, status, year, role, positioning, descriptor, technologies, github } =
-  project.data;
+const {
+  title,
+  order,
+  status,
+  year,
+  role,
+  positioning,
+  descriptor,
+  technologies,
+  github,
+  flow,
+} = project.data;
 
 const number = String(order).padStart(2, '0');
+
+/* The return path, where this project's architecture documents one. Read from
+   the diagram data the detail page already uses rather than restated here, so
+   there is still exactly one place that knows GeoCounterfactual's critic loops
+   back and the others do not. */
+const loop = Object.values(ARCHITECTURE_DIAGRAMS[project.id] ?? {}).find(
+  (spec) => spec.loopBack,
+)?.loopBack?.label;
 ---
 
 <article class="row" data-reveal>
@@ -39,6 +65,12 @@ const number = String(order).padStart(2, '0');
         </a>
       </h3>
       <p class="row-positioning">{positioning}</p>
+
+      {flow && (
+        <div class="row-schematic">
+          <RowSchematic label={flow.label} steps={flow.steps} loop={loop} />
+        </div>
+      )}
     </div>
 
     <p class="row-descriptor">{descriptor}</p>
@@ -109,6 +141,44 @@ const number = String(order).padStart(2, '0');
   .row:hover .row-meta .label,
   .row:focus-within .row-meta .label {
     color: var(--color-ink);
+  }
+
+  /* --- Schematic reveal --------------------------------------------------
+     The schematic sits in space the headline column already had spare: the
+     metadata rail beside it is the taller column at every width from 768 up,
+     by 39px to 74px. Occupying slack rather than adding a band is what keeps
+     this from lengthening the page, and reserving the space whether or not
+     the row is engaged is what keeps the reveal free of layout shift.
+
+     Visible by default. The hover treatment is added only where hover
+     actually exists, so a touch reader is never shown a preview that needs a
+     pointer to appear (§40) and a desktop reader gets the reveal §25 allows. */
+  .row-schematic {
+    transition:
+      opacity var(--motion-base) var(--ease-standard),
+      translate var(--motion-base) var(--ease-standard);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .row-schematic {
+      opacity: 0;
+      translate: 0 0.25rem;
+    }
+
+    .row:hover .row-schematic,
+    .row:focus-within .row-schematic {
+      opacity: 1;
+      translate: none;
+    }
+  }
+
+  /* Asked for less motion: the schematic is simply there, on every device,
+     with nothing to wait for and nothing to trigger. */
+  @media (prefers-reduced-motion: reduce) {
+    .row-schematic {
+      opacity: 1;
+      translate: none;
+    }
   }
 
   .row-grid {
@@ -244,6 +314,39 @@ const number = String(order).padStart(2, '0');
     .row-meta {
       grid-column: 10 / span 3;
       margin-top: 0;
+    }
+  }
+</style>
+
+<style is:global>
+  /* --- Schematic stagger --------------------------------------------------
+     The nodes arrive left to right, 14ms apart, so the rail reads as the
+     direction of the flow rather than as a block switching on. The whole
+     sequence is inside 320ms for the longest rail on the page.
+
+     Global because `.row` is rendered here and the nodes are rendered by
+     RowSchematic.astro, either side of Astro's per-component style scoping.
+     Same precedent as the index-focus styles in SelectedWork.astro.
+
+     The delay is applied to the reveal only, never to the return: leaving a
+     row drops the delay to zero so the schematic goes at once instead of
+     unwinding node by node behind the pointer. */
+  @media (hover: hover) and (pointer: fine) {
+    .row-schematic .sch-node {
+      opacity: 0;
+      transition: opacity var(--motion-base) var(--ease-standard);
+    }
+
+    .row:hover .row-schematic .sch-node,
+    .row:focus-within .row-schematic .sch-node {
+      opacity: 1;
+      transition-delay: calc(var(--sch-index, 0) * 14ms);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .row-schematic .sch-node {
+      opacity: 1;
     }
   }
 </style>

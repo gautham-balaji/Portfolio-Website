@@ -224,6 +224,113 @@ test.describe('project index', () => {
   });
 });
 
+test.describe('row schematics', () => {
+  test('give the keyboard the same schematic the pointer gets, without moving the row', async ({
+    browser,
+  }) => {
+    // The schematic is the one thing hover adds to an index row (§25). Two
+    // things have to hold for that to be legitimate: the keyboard must reach
+    // the same state, and reserving the space must keep the reveal free of
+    // layout shift.
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    await page.goto('/');
+    await page.evaluate(() => {
+      document.documentElement.style.scrollBehavior = 'auto';
+    });
+
+    const rows = page.locator('[data-project-index] .row');
+    await rows.first().scrollIntoViewIfNeeded();
+    await page.waitForTimeout(600);
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(400);
+
+    const geometry = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('[data-project-index] .row')].map((row) => ({
+          height: Math.round(row.getBoundingClientRect().height),
+          titleTop: Math.round(row.querySelector('.row-title')!.getBoundingClientRect().top),
+          schematic: Number(
+            getComputedStyle(row.querySelector('.row-schematic')!).opacity,
+          ).toFixed(2),
+        })),
+      );
+
+    const atRest = await geometry();
+    expect(atRest.every((row) => row.schematic === '0.00')).toBe(true);
+
+    await rows.first().hover();
+    await page.waitForTimeout(600);
+    const hovered = await geometry();
+    expect(hovered[0]?.schematic).toBe('1.00');
+    expect(hovered[1]?.schematic).toBe('0.00');
+
+    // Keyboard parity: focusing a link inside the second row must reveal that
+    // row's schematic exactly as hovering the first revealed its own.
+    await page.mouse.move(2, 2);
+    await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('[data-project-index] .row')];
+      rows[1]?.querySelector('a')?.focus();
+    });
+    await page.waitForTimeout(600);
+    const focused = await geometry();
+    expect(focused[1]?.schematic).toBe('1.00');
+    expect(focused[0]?.schematic).toBe('0.00');
+
+    // Nothing moved through any of it.
+    atRest.forEach((row, i) => {
+      expect(focused[i]?.height).toBe(row.height);
+      expect(focused[i]?.titleTop).toBe(row.titleTop);
+    });
+
+    await context.close();
+  });
+
+  test('are visible without hover on a touch device', async ({ browser }) => {
+    // §40 forbids hover-dependent previews on mobile, so the reveal is gated
+    // on pointer capability rather than width: where there is no hover, the
+    // schematic is simply always there.
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    });
+    const page = await context.newPage();
+    await page.goto('/');
+    await page.locator('[data-project-index] .row').first().scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+
+    const opacities = await page
+      .locator('[data-project-index] .row-schematic')
+      .evaluateAll((els) => els.map((el) => Number(getComputedStyle(el).opacity).toFixed(2)));
+
+    expect(opacities.length).toBeGreaterThan(0);
+    expect(opacities.every((o) => o === '1.00')).toBe(true);
+
+    await context.close();
+  });
+
+  test('name every stage from the documented flow, not a second copy of it', async ({
+    page,
+  }) => {
+    // The schematic must stay a second view of the architecture, never a
+    // second source of it: each node is a step from the project's `flow`.
+    await page.goto('/projects/vera');
+    const detailStages = await page
+      .locator('.flow-steps .step-label')
+      .evaluateAll((els) => els.map((el) => el.textContent?.trim().toUpperCase()));
+
+    await page.goto('/');
+    const rowStages = await page
+      .locator('[data-project-index] .row')
+      .nth(1)
+      .locator('.sch-box')
+      .evaluateAll((els) => els.map((el) => el.firstChild?.textContent?.trim().toUpperCase()));
+
+    expect(rowStages).toEqual(detailStages);
+  });
+});
+
 test.describe('section labels', () => {
   test('resolve to their real text and never scramble the accessible name', async ({
     page,
