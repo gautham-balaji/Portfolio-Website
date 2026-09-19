@@ -36,7 +36,7 @@ export interface SeoMeta {
 }
 
 /** Site-level default title, used when a page supplies none. */
-const DEFAULT_TITLE = `${SITE.name} — ${SITE.title}`;
+const DEFAULT_TITLE = `${SITE.name}, ${SITE.title}`;
 
 /** Join the site origin and a route path without doubling or dropping slashes. */
 export function absoluteUrl(path: string): string {

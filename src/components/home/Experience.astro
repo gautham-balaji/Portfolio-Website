@@ -19,7 +19,7 @@ const experience = (await getCollection('experience')).sort(
 const featured = experience.find((e) => e.data.featured);
 const others = experience.filter((e) => !e.data.featured);
 
-const period = (start: string, end: string | null) => `${start} — ${end ?? 'Present'}`;
+const period = (start: string, end: string | null) => `${start} to ${end ?? 'Present'}`;
 ---
 
 <Section id="experience" number="02" label="Experience">

@@ -35,8 +35,14 @@ describe('buildMeta', () => {
 
   it('uses the site default title when a page supplies none', () => {
     const meta = buildMeta({ description: 'd', path: '/' });
-    expect(meta.title).toBe(`${SITE.name} — ${SITE.title}`);
+    // A comma, not an em dash: this string is the homepage's <title>, its
+    // og:title and its twitter:title, so it is the copy a search result and a
+    // shared link show, and MASTER_CONTENT.md §03 rules out em dashes in
+    // visible copy. Still not the "X | Gautham Balaji" pattern, which is
+    // reserved for pages that supply their own title.
+    expect(meta.title).toBe(`${SITE.name}, ${SITE.title}`);
     expect(meta.title).not.toContain('|');
+    expect(meta.title).not.toContain('—');
   });
 
   it('derives the canonical URL from the path', () => {

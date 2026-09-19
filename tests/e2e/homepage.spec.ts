@@ -174,3 +174,72 @@ test('the page renders its content with JavaScript disabled', async ({ browser }
 
   await context.close();
 });
+
+test.describe('action pairs at narrow widths', () => {
+  // Each pair stacks below the width its own content needs, rather than at a
+  // shared device breakpoint: the hero controls measure 404px and the
+  // flagship ones 341px, so they cannot sensibly change over at the same
+  // place. Both sides of each threshold are checked, because the failure
+  // being guarded against is a pair sitting on one line with almost no slack,
+  // which is what leaves the layout to be decided by which font has loaded.
+  const CASES = [
+    { name: 'hero', selector: '.hero-actions', stacksBelow: 560 },
+    { name: 'flagship', selector: '.flagship-actions', stacksBelow: 480 },
+  ];
+
+  for (const { name, selector, stacksBelow } of CASES) {
+    test(`${name} controls stack below ${stacksBelow}px and sit on one line above it`, async ({
+      browser,
+    }) => {
+      for (const [width, expected] of [
+        [320, 'stack'],
+        [390, 'stack'],
+        [stacksBelow - 1, 'stack'],
+        [stacksBelow, 'row'],
+        [stacksBelow + 120, 'row'],
+      ] as const) {
+        const context = await browser.newContext({ viewport: { width, height: 900 } });
+        const page = await context.newPage();
+        await page.goto('/');
+        await page.evaluate(() => document.fonts.ready);
+
+        const measured = await page.evaluate((sel) => {
+          const group = document.querySelector(sel)!;
+          const items = [...group.children].filter(
+            (child) => child.getBoundingClientRect().width > 0,
+          );
+          const style = getComputedStyle(group);
+          const gap = parseFloat(style.columnGap || style.gap) || 0;
+          const needed =
+            items.reduce((total, item) => total + item.getBoundingClientRect().width, 0) +
+            gap * (items.length - 1);
+          const tops = new Set(
+            items.map((item) => Math.round(item.getBoundingClientRect().top)),
+          );
+          return {
+            layout: tops.size === 1 ? 'row' : 'stack',
+            slack: group.getBoundingClientRect().width - needed,
+            shortest: Math.min(...items.map((item) => item.getBoundingClientRect().height)),
+            overflow: document.documentElement.scrollWidth - window.innerWidth,
+          };
+        }, selector);
+
+        expect(measured.layout, `${name} at ${width}px`).toBe(expected);
+        // On one line there has to be real room, not a hairline of it.
+        if (expected === 'row') {
+          expect(measured.slack, `${name} at ${width}px must not be cramped`).toBeGreaterThan(
+            40,
+          );
+        }
+        // Stacking must not cost the controls their tap target.
+        expect(
+          measured.shortest,
+          `${name} at ${width}px target height`,
+        ).toBeGreaterThanOrEqual(44);
+        expect(measured.overflow, `${name} at ${width}px`).toBeLessThanOrEqual(1);
+
+        await context.close();
+      }
+    });
+  }
+});

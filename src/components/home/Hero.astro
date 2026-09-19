@@ -174,11 +174,32 @@ import { RESUME_AVAILABLE, RESUME_PATH } from '@/lib/site';
     max-width: 52ch;
   }
 
+  /* Stacked first, side by side only once the pair stops running edge to
+     edge. Measured rather than guessed: the two controls need 404px, and the
+     available width is the viewport less two 4vw gutters, so
+
+       430px viewport -> 396px available   they wrap, with 9px to spare
+       480px          -> 442px             one row, 37px slack, edge to edge
+       560px          -> 515px             one row, 111px slack, composed
+
+     Relying on flex-wrap alone put the changeover at roughly 440px with no
+     margin either side of it, which is the same knife edge that cost the 404
+     page its layout shift. Below 560 they stack from the first frame, so no
+     font metric can move the boundary. */
   .hero-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 0.75rem;
     margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  }
+
+  @media (min-width: 560px) {
+    .hero-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+    }
   }
 
   .is-unavailable {

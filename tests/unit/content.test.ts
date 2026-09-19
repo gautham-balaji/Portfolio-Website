@@ -67,3 +67,27 @@ describe('LinkedIn URL (Phase 5: reconciled to the "b" variant everywhere)', () 
     expect(offenders.map((f) => f.path)).toEqual([]);
   });
 });
+
+describe('visible copy avoids em dashes (MASTER_CONTENT.md §03)', () => {
+  // The rule already had one guard, on the contact form's error strings.
+  // These two modules hold the rest of the copy that reaches a reader: the
+  // page titles and social previews in site.ts/seo.ts, and every heading,
+  // paragraph and label in copy.ts.
+  it.each(['src/lib/copy.ts', 'src/lib/site.ts', 'src/lib/seo.ts'])(
+    '%s contains no em dash',
+    async (file) => {
+      const source = await fs.readFile(path.join(ROOT, file), 'utf-8');
+      expect(source).not.toContain('\u2014');
+    },
+  );
+
+  it('formats experience dates without one', async () => {
+    // "Aug 2025 — Present" was the last em dash rendering on the homepage.
+    const source = await fs.readFile(
+      path.join(ROOT, 'src/components/home/Experience.astro'),
+      'utf-8',
+    );
+    expect(source).not.toContain('\u2014');
+    expect(source).toContain("${start} to ${end ?? 'Present'}");
+  });
+});
