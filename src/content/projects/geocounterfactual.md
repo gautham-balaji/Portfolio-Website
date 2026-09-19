@@ -31,24 +31,38 @@ overview: >-
   elevation data for that region, computes what the terrain physically permits,
   generates a candidate image of the result, and then checks that candidate
   against the physics. Invalid candidates are rejected and regenerated.
-flow:
+architecture:
   label: Simulation loop
-  steps:
-    - label: Intervention
+  figure: 2
+  stages:
+    - id: intervention
+      label: Intervention
       detail: Natural-language request for a selected watershed
-    - label: Planner
+    - id: planner
+      label: Planner
       detail: Gemini parses intent into a structured plan
-    - label: Earth observation
+    - id: earth-observation
+      label: Earth observation
       detail: Sentinel-2, Copernicus DEM, ESA WorldCover, CHIRPS at 10m
-    - label: Dynamics
+    - id: dynamics
+      label: Dynamics
       detail: Deterministic NumPy hydro-ecological constraints, D8 routing
-    - label: Generator
+    - id: generator
+      label: Generator
       detail: Stable Diffusion 1.5 with ControlNet proposes imagery
-    - label: Critic
-      detail: Accept, or reject and route back to the generator
+    - id: critic
+      label: Critic
+      detail: >-
+        Accept, or reject and route back to the generator, on gravity and
+        slope, spectral and SSIM checks
       gate: true
-    - label: Simulation
+    - id: simulation
+      label: Simulation
       detail: Accepted counterfactual with XAI overlay
+  loop:
+    from: critic
+    to: generator
+    label: reject
 decisions:
   - title: A deterministic critic instead of an LLM vision critic
     body: >-
@@ -118,10 +132,11 @@ figures:
   - figure: 2
     kind: diagram
     span: wide
-    ratio: 16 / 10
+    ratio: auto
     caption: >-
-      The LangGraph loop: input handler, planner, dynamics, generator and
-      critic, with the rejection path routing back to the generator.
+      The simulation architecture: an intervention through planning, Earth
+      observation and deterministic dynamics into generation, with the
+      critic's rejection path routing back to the generator.
   - figure: 3
     kind: screenshot
     span: half

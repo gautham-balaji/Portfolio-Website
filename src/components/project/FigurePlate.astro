@@ -106,6 +106,18 @@ const plateLabel = `Figure ${number} placeholder. ${kindLabel}: ${caption} Not y
     </div>
   )}
 
+  {/* An optional legend, between the frame and the caption so the whole
+      figure stays one numbered object. Used by the architecture block, where
+      the drawing carries the topology and the legend carries the detail that
+      will not fit inside 148px-wide SVG boxes. `Astro.slots.has` is
+      resolved at compile time from the call site, so a caller that passes no
+      legend renders no wrapper. */}
+  {Astro.slots.has('legend') && (
+    <div class="figure-legend">
+      <slot name="legend" />
+    </div>
+  )}
+
   <figcaption class="figcap">
     <span class="label label-ink figcap-num">FIG. {number}</span>
     {/* label-oxide so the Soft Paper contrast guard applies: Oxide at this
@@ -155,6 +167,12 @@ const plateLabel = `Figure ${number} placeholder. ${kindLabel}: ${caption} Not y
   .plate-status {
     font-size: var(--text-meta-sm);
     color: var(--color-graphite-text);
+  }
+
+  /* The legend belongs to the frame above it, not to the caption below, so
+     it sits close to the drawing and the caption keeps its own rule. */
+  .figure-legend {
+    margin-top: 0.25rem;
   }
 
   .figcap {

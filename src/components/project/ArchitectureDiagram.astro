@@ -1,53 +1,54 @@
 ---
 /**
- * Architecture diagram.
+ * Architecture drawing: topology only.
  *
- * A hand-drawn-style, inline SVG pipeline: rectangular nodes, thin rules,
- * mono labels. Built from the same verified stage data already carried in a
- * project's `flow` frontmatter (or a close variant of it), never invented
- * structure. A stage may hold two nodes stacked to show a fork/join (for
- * example a CNN and classical features feeding one fusion step), and an
- * optional `loopBack` draws the one curved return edge some pipelines need
- * (GeoCounterfactual's critic rejecting back to the generator).
+ * A hand-drawn-style inline SVG of one project's pipeline, built from the
+ * canonical `architecture` block in that project's content entry. Rectangular
+ * nodes, thin rules, mono labels. A stage may hold two nodes stacked to show a
+ * fork that rejoins (the chess CNN beside the classical features, the two
+ * Legal NLP retrieval signals), and a documented return edge is drawn as one
+ * curved path (GeoCounterfactual's critic rejecting back to the generator).
  *
- * No JavaScript, no external requests: the SVG is written directly into the
- * page's DOM, so it inherits the page's CSS custom properties like any other
- * element, and needs no separate light/dark handling.
+ * P2.1 removed the per-node detail text from this drawing. It never fitted:
+ * the boxes are a fixed 148px wide and the detail baselines were computed from
+ * the label count, so a two-line label pushed its own detail out of the bottom
+ * of the box, a three-line detail overflowed, and a paired node's detail
+ * landed in the gap between the two rectangles. The response had been to
+ * abbreviate the content until it fitted, which is how the drawing came to
+ * describe a slightly different system from the list beside it. The detail now
+ * lives in ArchitectureStages.astro, at a real type size, where it can wrap.
  *
- * This is not a replacement for FlowDiagram, which reads correctly with CSS
- * disabled. This component is always used inside a <FigurePlate>, whose
- * figcaption already gives the diagram a textual caption; the sibling
- * `.dg-sr` list below repeats the stage and edge structure as plain text so
- * the shapes and arrows are never the only way to read the diagram.
+ * So this component draws structure and nothing else, and it is never the only
+ * account of the architecture: it is always rendered inside a FigurePlate
+ * whose legend slot carries the full stage list as text.
+ *
+ * No JavaScript, no external requests. The SVG is written straight into the
+ * page, so it inherits the page's custom properties like any other element.
  */
-interface Node {
-  label: string;
-  detail?: string;
-}
-
-interface Stage {
-  nodes: [Node] | [Node, Node];
-  gate?: boolean;
-}
+import type { ArchitectureStage } from '@/lib/architecture';
+import type { ResolvedLoop } from '@/lib/architecture';
+import { stageLabel } from '@/lib/architecture';
 
 interface Props {
-  stages: Stage[];
-  loopBack?: { from: number; to: number; label: string };
+  stages: ArchitectureStage[];
+  loop?: ResolvedLoop | undefined;
 }
 
-const { stages, loopBack } = Astro.props;
+const { stages, loop } = Astro.props;
 
 const COL_WIDTH = 148;
 const GAP = 56;
 const PAD = 24;
-const CENTER_Y = 120;
-const SINGLE_H = 64;
-const PAIR_H = 52;
+/* Node heights carry labels only now, so they are shorter than they were when
+   they also had to hold three lines of 8px detail text. */
+const SINGLE_H = 52;
+const PAIR_H = 44;
 const PAIR_GAP = 16;
+const CENTER_Y = 70;
 
-const hasLoop = Boolean(loopBack);
+const hasLoop = Boolean(loop);
 const width = PAD * 2 + stages.length * COL_WIDTH + (stages.length - 1) * GAP;
-const height = 240 + (hasLoop ? 70 : 0);
+const height = CENTER_Y * 2 + (hasLoop ? 60 : 0);
 
 function colX(i: number) {
   return PAD + i * (COL_WIDTH + GAP);
@@ -72,40 +73,42 @@ function wrap(text: string, maxChars: number): string[] {
 }
 
 interface NodeBox {
+  id: string;
   x: number;
   y: number;
   w: number;
   h: number;
   labelLines: string[];
-  detailLines: string[];
   gate: boolean;
 }
 
 const boxes: NodeBox[][] = stages.map((stage, i) => {
   const x = colX(i);
-  if (stage.nodes.length === 1) {
-    const [node] = stage.nodes;
+  const nodes = stage.nodes;
+
+  if (!nodes) {
     return [
       {
+        id: stage.id,
         x,
         y: CENTER_Y - SINGLE_H / 2,
         w: COL_WIDTH,
         h: SINGLE_H,
-        labelLines: wrap(node.label.toUpperCase(), 16),
-        detailLines: node.detail ? wrap(node.detail, 20).slice(0, 3) : [],
-        gate: Boolean(stage.gate),
+        labelLines: wrap(stageLabel(stage).toUpperCase(), 16),
+        gate: stage.gate,
       },
     ];
   }
+
   const top = CENTER_Y - (PAIR_H * 2 + PAIR_GAP) / 2;
-  return stage.nodes.map((node, j) => ({
+  return nodes.map((node, j) => ({
+    id: node.id,
     x,
     y: top + j * (PAIR_H + PAIR_GAP),
     w: COL_WIDTH,
     h: PAIR_H,
     labelLines: wrap(node.label.toUpperCase(), 16),
-    detailLines: node.detail ? wrap(node.detail, 20).slice(0, 1) : [],
-    gate: Boolean(stage.gate),
+    gate: stage.gate,
   }));
 });
 
@@ -128,16 +131,19 @@ for (let i = 0; i < boxes.length - 1; i++) {
   }
 }
 
+/* The return edge, dipped below the row so it cannot be confused with a
+   forward connector. Endpoints come from the resolved loop rather than from
+   array positions, so inserting a stage can no longer repoint it silently. */
 const loopPath = (() => {
-  if (!loopBack) return null;
-  const fromBox = boxes[loopBack.from]?.[0];
-  const toBox = boxes[loopBack.to]?.[0];
+  if (!loop) return null;
+  const fromBox = boxes[loop.fromIndex]?.[0];
+  const toBox = boxes[loop.toIndex]?.[0];
   if (!fromBox || !toBox) return null;
   const startX = fromBox.x + fromBox.w / 2;
   const startY = fromBox.y + fromBox.h;
   const endX = toBox.x + toBox.w / 2;
   const endY = toBox.y + toBox.h;
-  const dipY = height - 30;
+  const dipY = height - 26;
   return {
     d: `M ${startX} ${startY} C ${startX} ${dipY}, ${endX} ${dipY}, ${endX} ${endY}`,
     labelX: (startX + endX) / 2,
@@ -145,19 +151,29 @@ const loopPath = (() => {
   };
 })();
 
-/* Plain-text equivalent of the drawing, for anyone not reading the shapes. */
-const textStages = stages.map((stage) =>
-  stage.nodes.map((n) => n.label + (n.detail ? ` (${n.detail})` : '')).join(' + '),
-);
+/**
+ * The drawing's accessible name.
+ *
+ * Topology in a sentence: what leads to what, which stages run alongside each
+ * other, and where the return path goes. It deliberately carries no detail
+ * text, because the visible legend beside it already does, and repeating it
+ * would make a screen reader read the whole architecture twice.
+ */
+const spoken = stages
+  .map((stage) =>
+    stage.nodes
+      ? `${stage.nodes.map((node) => node.label).join(' and ')} in parallel`
+      : stageLabel(stage),
+  )
+  .join(' leads to ');
+
+const ariaLabel = `Architecture diagram: ${spoken}${
+  loop ? `, with ${loop.label} routing back from ${loop.fromLabel} to ${loop.toLabel}` : ''
+}.`;
 ---
 
 <div class="arch" data-reveal="diagram">
-  <svg
-    class="arch-svg"
-    viewBox={`0 0 ${width} ${height}`}
-    role="img"
-    aria-label={`Architecture diagram: ${textStages.join(' leads to ')}${loopBack ? `, with ${loopBack.label} routing back from stage ${loopBack.from + 1} to stage ${loopBack.to + 1}` : ''}.`}
-  >
+  <svg class="arch-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel}>
     <defs>
       <marker
         id="arch-arrow"
@@ -195,7 +211,7 @@ const textStages = stages.map((stage) =>
       />
     ))}
 
-    {loopPath && (
+    {loopPath && loop && (
       <>
         <path
           d={loopPath.d}
@@ -210,14 +226,14 @@ const textStages = stages.map((stage) =>
           style={`--stagger: ${boxes.length}`}
           text-anchor="middle"
         >
-          {loopBack?.label.toUpperCase()}
+          {loop.label.toUpperCase()}
         </text>
       </>
     )}
 
     {boxes.map((stageBoxes, stageIndex) =>
       stageBoxes.map((box) => (
-        <g class="arch-stage" style={`--stagger: ${stageIndex}`}>
+        <g class="arch-stage" style={`--stagger: ${stageIndex}`} data-stage={box.id}>
           <rect
             x={box.x}
             y={box.y}
@@ -240,41 +256,16 @@ const textStages = stages.map((stage) =>
               </tspan>
             ))}
           </text>
-          {box.detailLines.length > 0 && (
-            <text
-              x={box.x + box.w / 2}
-              y={box.y + box.h / 2 + (box.labelLines.length * 11 + 12)}
-              text-anchor="middle"
-              class="arch-detail"
-            >
-              {box.detailLines.map((line, li) => (
-                <tspan x={box.x + box.w / 2} dy={li === 0 ? '0' : '1.1em'}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-          )}
         </g>
       )),
     )}
   </svg>
-
-  <ol class="dg-sr">
-    {textStages.map((text, i) => (
-      <li>
-        {text}
-        {loopBack?.from === i && ` (on rejection, returns to stage ${loopBack.to + 1})`}
-      </li>
-    ))}
-  </ol>
 </div>
 
 <style>
   .arch {
     width: 100%;
-    height: 100%;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
   }
@@ -282,7 +273,6 @@ const textStages = stages.map((stage) =>
   .arch-svg {
     width: 100%;
     height: auto;
-    max-height: 100%;
   }
 
   .arch-node {
@@ -301,12 +291,10 @@ const textStages = stages.map((stage) =>
     font-size: 9px;
     letter-spacing: 0.04em;
     fill: var(--color-ink);
-  }
-
-  .arch-detail {
-    font-family: var(--font-body);
-    font-size: 8px;
-    fill: var(--color-graphite-text);
+    /* Labels sit on the geometric centre of their box. With detail text gone
+       there is nothing below them to balance against, so the optical centre
+       and the geometric one are close enough to leave alone. */
+    dominant-baseline: middle;
   }
 
   .arch-edge {
@@ -332,19 +320,5 @@ const textStages = stages.map((stage) =>
 
   .arch-arrowhead-oxide {
     fill: var(--color-oxide-rule);
-  }
-
-  /* Visually hidden, not display:none: the structure is still real content,
-     just delivered as text instead of shapes. */
-  .dg-sr {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
 </style>

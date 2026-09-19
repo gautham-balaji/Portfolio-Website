@@ -18,35 +18,24 @@
  */
 import type { CollectionEntry } from 'astro:content';
 import RowSchematic from '@/components/project/RowSchematic.astro';
-import { ARCHITECTURE_DIAGRAMS } from '@/lib/architectureDiagrams';
+import { rowView } from '@/lib/architecture';
 
 interface Props {
   project: CollectionEntry<'projects'>;
 }
 
 const { project } = Astro.props;
-const {
-  title,
-  order,
-  status,
-  year,
-  role,
-  positioning,
-  descriptor,
-  technologies,
-  github,
-  flow,
-} = project.data;
+const { title, order, status, year, role, positioning, descriptor, technologies, github } =
+  project.data;
 
 const number = String(order).padStart(2, '0');
 
-/* The return path, where this project's architecture documents one. Read from
-   the diagram data the detail page already uses rather than restated here, so
-   there is still exactly one place that knows GeoCounterfactual's critic loops
-   back and the others do not. */
-const loop = Object.values(ARCHITECTURE_DIAGRAMS[project.id] ?? {}).find(
-  (spec) => spec.loopBack,
-)?.loopBack?.label;
+/* The compact projection of the one canonical architecture. Stage names and
+   the return path come from the same content entry the detail page draws, so
+   there is exactly one place that knows GeoCounterfactual's critic loops back
+   and the others do not. Before P2.1 this row had to read two sources to
+   assemble the same thing. */
+const schematic = rowView(project);
 ---
 
 <article class="row" data-reveal>
@@ -66,9 +55,13 @@ const loop = Object.values(ARCHITECTURE_DIAGRAMS[project.id] ?? {}).find(
       </h3>
       <p class="row-positioning">{positioning}</p>
 
-      {flow && (
+      {schematic && (
         <div class="row-schematic">
-          <RowSchematic label={flow.label} steps={flow.steps} loop={loop} />
+          <RowSchematic
+            label={schematic.label}
+            steps={schematic.steps}
+            loop={schematic.loop}
+          />
         </div>
       )}
     </div>

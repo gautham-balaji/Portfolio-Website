@@ -21,11 +21,11 @@ import SiteFooter from '@/components/layout/SiteFooter.astro';
 import ProjectHero from '@/components/project/ProjectHero.astro';
 import ProjectNav from '@/components/project/ProjectNav.astro';
 import FigurePlate from '@/components/project/FigurePlate.astro';
-import FlowDiagram from '@/components/project/FlowDiagram.astro';
 import ArchitectureDiagram from '@/components/project/ArchitectureDiagram.astro';
+import ArchitectureStages from '@/components/project/ArchitectureStages.astro';
 import MetricList from '@/components/project/MetricList.astro';
 import DecisionList from '@/components/project/DecisionList.astro';
-import { ARCHITECTURE_DIAGRAMS } from '@/lib/architectureDiagrams';
+import { detailView } from '@/lib/architecture';
 
 interface Props {
   project: CollectionEntry<'projects'>;
@@ -37,16 +37,23 @@ const { project, previous, next } = Astro.props;
 const { Content } = await render(project);
 
 const d = project.data;
-const [heroFigure, ...restFigures] = d.figures;
-
 const description = d.overview ?? d.descriptor;
 
-const diagramsForProject = ARCHITECTURE_DIAGRAMS[project.id];
-function diagramFor(figureNumber: number) {
-  return diagramsForProject?.[figureNumber];
-}
+/* P2.1: one architecture, rendered once.
+   The drawing and its legend are a single figure, so they occupy the figure
+   slot the content nominates rather than appearing as a separate page block.
+   For Legal NLP and VERA that slot is figure 1, which is the hero; for Chess
+   and GeoCounterfactual it is figure 2, which is pulled out of the evidence
+   grid and placed after the overview, next to the prose it belongs with. */
+const architecture = detailView(project);
 
-const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
+const [heroFigure, ...restFigures] = d.figures;
+const architectureFigure = d.figures.find((figure) => figure.figure === architecture?.figure);
+
+const heroIsArchitecture = Boolean(
+  architecture && heroFigure && heroFigure.figure === architecture.figure,
+);
+const evidenceFigures = restFigures.filter((figure) => figure.figure !== architecture?.figure);
 ---
 
 <BaseLayout
@@ -60,7 +67,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
   <article class="project">
     <ProjectHero project={project} />
 
-    {heroFigure && heroDiagram && (
+    {heroFigure && heroIsArchitecture && architecture && (
       <div class="container block block-hero-figure enter" style="--enter-index: 5">
         <FigurePlate
           figure={heroFigure.figure}
@@ -72,12 +79,18 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
           eager
           sizes="(min-width: 1024px) 80vw, 100vw"
         >
-          <ArchitectureDiagram stages={heroDiagram.stages} loopBack={heroDiagram.loopBack} />
+          <ArchitectureDiagram stages={architecture.stages} loop={architecture.loop} />
+          <ArchitectureStages
+            slot="legend"
+            label={architecture.label}
+            stages={architecture.stages}
+            loop={architecture.loop}
+          />
         </FigurePlate>
       </div>
     )}
 
-    {heroFigure && !heroDiagram && (
+    {heroFigure && !heroIsArchitecture && (
       <div class="container block block-hero-figure enter" style="--enter-index: 5">
         <FigurePlate
           figure={heroFigure.figure}
@@ -104,11 +117,27 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
       </div>
     )}
 
-    {d.flow && (
+    {architecture && architectureFigure && !heroIsArchitecture && (
       <div class="container block">
         <div class="grid-12">
-          <div class="flow-wrap" data-reveal>
-            <FlowDiagram label={d.flow.label} steps={d.flow.steps} />
+          <div class="architecture-wrap" data-reveal>
+            <FigurePlate
+              figure={architectureFigure.figure}
+              caption={architectureFigure.caption}
+              kind={architectureFigure.kind}
+              span={architectureFigure.span}
+              ratio={architectureFigure.ratio}
+              source={architectureFigure.source}
+              sizes="(min-width: 1024px) 76vw, 100vw"
+            >
+              <ArchitectureDiagram stages={architecture.stages} loop={architecture.loop} />
+              <ArchitectureStages
+                slot="legend"
+                label={architecture.label}
+                stages={architecture.stages}
+                loop={architecture.loop}
+              />
+            </FigurePlate>
           </div>
         </div>
       </div>
@@ -142,45 +171,34 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
       </div>
     )}
 
-    {restFigures.length > 0 && (
+    {evidenceFigures.length > 0 && (
       <section class="container block" aria-labelledby="evidence-heading">
         <h2 id="evidence-heading" class="label block-heading">
           Visual evidence
         </h2>
         <div class="grid-12 evidence">
-          {restFigures.map((figure) => {
-            const diagram = diagramFor(figure.figure);
+          {/* The architecture figure is filtered out above: it is rendered as
+              its own block rather than as one item among the evidence, so a
+              project's own drawing is never sitting in the grid that holds
+              the captures it does not have yet. */}
+          {evidenceFigures.map((figure) => {
             const sizes =
               figure.span === 'half'
                 ? '(min-width: 1024px) 38vw, 100vw'
                 : '(min-width: 1024px) 76vw, 100vw';
             return (
               <div class:list={['evidence-item', `is-${figure.span}`]} data-reveal>
-                {diagram ? (
-                  <FigurePlate
-                    figure={figure.figure}
-                    caption={figure.caption}
-                    kind={figure.kind}
-                    span={figure.span}
-                    ratio={figure.ratio}
-                    source={figure.source}
-                    sizes={sizes}
-                  >
-                    <ArchitectureDiagram stages={diagram.stages} loopBack={diagram.loopBack} />
-                  </FigurePlate>
-                ) : (
-                  <FigurePlate
-                    figure={figure.figure}
-                    caption={figure.caption}
-                    kind={figure.kind}
-                    span={figure.span}
-                    ratio={figure.ratio}
-                    src={figure.src}
-                    alt={figure.alt}
-                    source={figure.source}
-                    sizes={sizes}
-                  />
-                )}
+                <FigurePlate
+                  figure={figure.figure}
+                  caption={figure.caption}
+                  kind={figure.kind}
+                  span={figure.span}
+                  ratio={figure.ratio}
+                  src={figure.src}
+                  alt={figure.alt}
+                  source={figure.source}
+                  sizes={sizes}
+                />
               </div>
             );
           })}
@@ -239,7 +257,7 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
     max-width: 40ch;
   }
 
-  .flow-wrap,
+  .architecture-wrap,
   .decisions-wrap,
   .prose,
   .limitations {
@@ -316,9 +334,9 @@ const heroDiagram = heroFigure ? diagramFor(heroFigure.figure) : undefined;
       max-width: none;
     }
 
-    /* Full width. A seven-node flow needs the whole grid to sit on one row,
-       and the diagram earns the space. */
-    .flow-wrap {
+    /* Full width. A seven-stage pipeline needs the whole grid to sit on one
+       row, and the drawing earns the space. */
+    .architecture-wrap {
       grid-column: 1 / -1;
     }
 

@@ -22,20 +22,32 @@ overview: >-
   against Stockfish evaluations, combines that score with classical chess
   features through ridge regression, reranks candidate moves, and then states
   the reasoning behind its choice in language a player can check.
-flow:
+architecture:
   label: Move selection
-  steps:
-    - label: Position
+  figure: 2
+  stages:
+    - id: position
+      label: Position
       detail: 8x8x12 planes, one per piece type per colour
-    - label: CNN
-      detail: Predicts a Stockfish centipawn evaluation
-    - label: Classical features
-      detail: Material, space, centre control, mobility
-    - label: Ridge fusion
+    # The learned and the hand-written signals run alongside each other and
+    # rejoin at the fusion step. Reading them as two sequential stages, as the
+    # old flow list had to, misses the point of the architecture.
+    - id: scoring-signals
+      nodes:
+        - id: cnn
+          label: CNN
+          detail: Predicts a Stockfish centipawn evaluation
+        - id: classical-features
+          label: Classical features
+          detail: Material, space, centre control, mobility
+    - id: ridge-fusion
+      label: Ridge fusion
       detail: Weighted combination into one hybrid score
-    - label: Rerank
+    - id: rerank
+      label: Rerank
       detail: Heuristic bonuses plus one-ply opponent lookahead
-    - label: Move + explanation
+    - id: move-explanation
+      label: Move + explanation
       detail: Ranked moves with checkable reasoning
 decisions:
   - title: Predict an existing evaluation rather than learn from self-play
@@ -103,11 +115,12 @@ figures:
       moves and the generated explanation for the chosen move.
   - figure: 2
     kind: diagram
-    span: half
-    ratio: 4 / 3
+    span: wide
+    ratio: auto
     caption: >-
       Architecture: board planes into the CNN, classical features alongside, and
-      ridge fusion producing the hybrid score used for reranking.
+      ridge fusion producing the hybrid score used for reranking and the
+      explained move.
   - figure: 3
     kind: chart
     span: half

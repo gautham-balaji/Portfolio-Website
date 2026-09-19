@@ -2,37 +2,34 @@
 /**
  * Compact architecture schematic for a project index row.
  *
- * A small sibling of FlowDiagram.astro, and built the same way for the same
+ * A small sibling of ArchitectureStages.astro, built the same way for the same
  * reason (§33): it is a semantic ordered list styled into a rail, not a
  * picture. That means it reads correctly with CSS unavailable, in reading
  * mode, and in a screen reader without needing a parallel text description,
  * and it keeps its labels at a real type size at every width instead of
  * scaling down with an SVG viewBox.
  *
- * It carries no information of its own. Every node is a `flow` step from the
- * project's own content entry, which is the same data the detail page draws
- * its full diagram from, so there is one architecture definition per project
- * and this is a second view of it rather than a second copy.
+ * It carries no information of its own. Every node is a stage from the one
+ * canonical `architecture` block in the project's own content entry, reached
+ * through `rowView()`, which is the same data the detail page draws its full
+ * figure from. There is one architecture definition per project and this is a
+ * projection of it rather than a second copy.
  *
  * Per §52 the visual language is the one already in use: hairlines, thin
  * outlines, mono labels, and Oxide reserved for the single decision point.
  * The detail text each step carries is deliberately dropped here; at row
  * scale the sequence is the message and the prose belongs on the case study.
  */
-interface Step {
-  label: string;
-  detail?: string | undefined;
-  gate?: boolean;
-}
+import type { RowStage } from '@/lib/architecture';
 
 interface Props {
-  /** The flow's own name, e.g. "Call lifecycle". Names the list. */
+  /** The architecture's own name, e.g. "Call lifecycle". Names the list. */
   label: string;
-  steps: Step[];
+  steps: RowStage[];
   /**
    * Set where the project's architecture documents a return path, so the
    * decision node can show that rejection routes backwards. Supplied by the
-   * caller from existing diagram data; never inferred here.
+   * caller from the canonical block; never inferred here.
    */
   loop?: string | undefined;
 }

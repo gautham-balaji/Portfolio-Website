@@ -140,41 +140,148 @@ for (const project of PROJECTS) {
   });
 }
 
-const ARCHITECTURE_DIAGRAMS: {
+/**
+ * P2.1: one canonical architecture per page.
+ *
+ * Each project used to render its pipeline twice, from two sources that had
+ * drifted apart. It now renders once, as a single figure whose drawing carries
+ * the topology and whose visible legend carries the detail.
+ */
+const ARCHITECTURES: {
   slug: string;
-  minStages: number;
-  hasLoopBack?: boolean;
+  stages: number;
+  /** Stages drawn as a pair of nodes rather than one box. */
+  parallel: number;
+  loop?: boolean;
 }[] = [
-  { slug: 'chess-engine', minStages: 4 },
-  { slug: 'legal-nlp', minStages: 5 },
-  { slug: 'vera', minStages: 7 },
-  { slug: 'geocounterfactual', minStages: 6, hasLoopBack: true },
+  { slug: 'chess-engine', stages: 5, parallel: 1 },
+  { slug: 'legal-nlp', stages: 6, parallel: 1 },
+  { slug: 'vera', stages: 7, parallel: 0 },
+  { slug: 'geocounterfactual', stages: 7, parallel: 0, loop: true },
 ];
 
-for (const project of ARCHITECTURE_DIAGRAMS) {
-  test(`${project.slug} architecture diagram has an accessible name and a text equivalent`, async ({
-    page,
-  }) => {
-    // Phase 5: real architecture diagrams built from verified flow/decision
-    // data. The shapes must never be the only way to read the diagram.
-    await page.goto(`/projects/${project.slug}`);
+for (const project of ARCHITECTURES) {
+  test.describe(`${project.slug} architecture`, () => {
+    test('renders exactly once, as one drawing with one legend', async ({ page }) => {
+      // The consolidation this suite exists to protect: no page may grow a
+      // second full architecture rendering back.
+      await page.goto(`/projects/${project.slug}`);
 
-    const svg = page.locator('svg.arch-svg');
-    await expect(svg).toHaveCount(1);
-    await expect(svg).toHaveAttribute('role', 'img');
+      await expect(page.locator('svg.arch-svg')).toHaveCount(1);
+      await expect(page.locator('.stage-list')).toHaveCount(1);
+      // The retired component and its markup must not return.
+      await expect(page.locator('.flow-steps')).toHaveCount(0);
+      await expect(page.locator('.dg-sr')).toHaveCount(0);
+    });
 
-    const ariaLabel = await svg.getAttribute('aria-label');
-    expect(ariaLabel?.length ?? 0).toBeGreaterThan(20);
+    test('sits inside a single numbered figure with one caption', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
 
-    const textEquivalent = page.locator('.dg-sr li');
-    expect(await textEquivalent.count()).toBeGreaterThanOrEqual(project.minStages);
+      const figure = page.locator('figure').filter({ has: page.locator('svg.arch-svg') });
+      await expect(figure).toHaveCount(1);
+      await expect(figure.locator('figcaption')).toHaveCount(1);
+      await expect(figure.locator('.stage-list')).toHaveCount(1);
+    });
 
-    if (project.hasLoopBack) {
-      expect(ariaLabel).toMatch(/routing back/i);
-      await expect(page.getByText(/on rejection, returns to stage/i)).toHaveCount(1);
+    test('names the drawing and the legend for assistive technology', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+
+      const svg = page.locator('svg.arch-svg');
+      await expect(svg).toHaveAttribute('role', 'img');
+      const ariaLabel = await svg.getAttribute('aria-label');
+      expect(ariaLabel?.length ?? 0).toBeGreaterThan(20);
+
+      // The legend is a real list and says what it is a list of. The old
+      // flow block rendered its title as an unassociated paragraph.
+      const label = await page.locator('.stage-list').getAttribute('aria-label');
+      expect(label).toMatch(/stages$/);
+    });
+
+    test('lists every stage, with its documented detail', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+
+      await expect(page.locator('.stage-list > .stage')).toHaveCount(project.stages);
+      await expect(page.locator('.stage-list .is-parallel')).toHaveCount(project.parallel);
+
+      // A stage is worth listing only if it says something: every entry
+      // carries a detail line, or nodes that do.
+      const empty = await page
+        .locator('.stage-list > .stage')
+        .evaluateAll((items) =>
+          items
+            .filter((item) => !item.querySelector('.stage-detail'))
+            .map((item) => item.getAttribute('data-stage')),
+        );
+      expect(empty).toEqual([]);
+    });
+
+    test('draws the same nodes the legend names, in the same order', async ({ page }) => {
+      // The drawing and its legend are generated from one list, and this is
+      // what keeps them from being allowed to disagree again.
+      await page.goto(`/projects/${project.slug}`);
+
+      const drawn = await page
+        .locator('svg.arch-svg g[data-stage]')
+        .evaluateAll((els) => els.map((el) => el.getAttribute('data-stage')));
+      const listed = await page
+        .locator('.stage-list [data-stage]')
+        .evaluateAll((els) => els.map((el) => el.getAttribute('data-stage')));
+
+      expect(drawn.length).toBeGreaterThan(0);
+      // A paired stage is one legend entry holding two drawn boxes, so the
+      // legend is a superset: every drawn box must appear, in order.
+      expect(listed.filter((id) => drawn.includes(id))).toEqual(drawn);
+    });
+
+    if (project.loop) {
+      test('states the return path in the drawing and in the legend', async ({ page }) => {
+        await page.goto(`/projects/${project.slug}`);
+
+        const ariaLabel = await page.locator('svg.arch-svg').getAttribute('aria-label');
+        expect(ariaLabel).toMatch(/routing back/i);
+        // Referenced by name, not by stage number: the endpoints are ids now.
+        expect(ariaLabel).toMatch(/from Critic to Generator/i);
+
+        await expect(page.locator('.stage-loop')).toHaveCount(1);
+        await expect(page.getByText(/on reject, returns to Generator/i)).toHaveCount(1);
+      });
+    } else {
+      test('shows no return path, because none is documented', async ({ page }) => {
+        await page.goto(`/projects/${project.slug}`);
+        await expect(page.locator('.stage-loop')).toHaveCount(0);
+      });
     }
   });
 }
+
+test('GeoCounterfactual keeps the stage its old diagram dropped', async ({ page }) => {
+  // The pre-P2.1 drawing omitted Earth observation, so the page described a
+  // system with no satellite input while the list beside it did not.
+  await page.goto('/projects/geocounterfactual');
+
+  const legend = page.locator('.stage-list');
+  await expect(legend.locator('[data-stage="earth-observation"]')).toHaveCount(1);
+  await expect(page.locator('svg.arch-svg g[data-stage="earth-observation"]')).toHaveCount(1);
+
+  const detail = await legend.locator('[data-stage="earth-observation"]').textContent();
+  for (const token of ['Sentinel-2', 'Copernicus DEM', 'CHIRPS', '10m']) {
+    expect(detail).toContain(token);
+  }
+});
+
+test('Legal NLP marks its decision point on retrieval, not on the result', async ({
+  page,
+}) => {
+  // The two old sources disagreed: the flow gated Hybrid retrieval and the
+  // diagram gated Ranked cases, so the homepage and this page contradicted
+  // each other about where the project decides anything.
+  await page.goto('/projects/legal-nlp');
+
+  const gated = page.locator('.stage-list > .stage.is-gate');
+  await expect(gated).toHaveCount(1);
+  await expect(gated).toHaveAttribute('data-stage', 'hybrid-retrieval');
+  await expect(gated.locator('.stage-flag').first()).toBeVisible();
+});
 
 test('the chess page never presents 0.506 as an accuracy figure', async ({ page }) => {
   // MASTER_CONTENT §23 is explicit: "Do not call this 50.6% accuracy."

@@ -30,21 +30,37 @@ overview: >-
   embeddings, and by structure, using the graph. The two signals are combined at
   rerank time, so a case can surface because it reads similarly or because it
   sits in the right position in the citation network.
-flow:
+architecture:
   label: Judgment to retrieval
-  steps:
-    - label: Judgment
+  figure: 1
+  stages:
+    - id: judgment
+      label: Judgment
       detail: Raw court judgment text
-    - label: NLP extraction
+    - id: nlp-extraction
+      label: NLP extraction
       detail: Legal NER plus pattern matching for IPC and CrPC references
-    - label: Entities and relations
+    - id: entities-relations
+      label: Entities and relations
       detail: Cases, statutes, sections, courts, judges
-    - label: Knowledge graph
+    - id: knowledge-graph
+      label: Knowledge graph
       detail: CITES, APPLIES, DECIDED_BY, INVOLVES
-    - label: Hybrid retrieval
+    # The decision point, and the one stage that is itself a pair: the two
+    # retrieval signals are scored together rather than in sequence.
+    - id: hybrid-retrieval
+      label: Hybrid retrieval
       detail: Semantic search and graph signals scored together
       gate: true
-    - label: Ranked cases
+      nodes:
+        - id: semantic-search
+          label: Semantic search
+          detail: Sentence embeddings
+        - id: graph-signals
+          label: Graph signals
+          detail: Citation structure
+    - id: ranked-cases
+      label: Ranked cases
       detail: Combined-score reranking with an explanation
 decisions:
   - title: Two retrieval signals instead of one
@@ -103,7 +119,7 @@ figures:
   - figure: 1
     kind: diagram
     span: full
-    ratio: 21 / 9
+    ratio: auto
     caption: >-
       Pipeline: judgment through NLP extraction into the knowledge graph, then
       out through hybrid semantic and graph retrieval.

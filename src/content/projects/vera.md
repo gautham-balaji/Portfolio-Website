@@ -25,23 +25,33 @@ overview: >-
   not the conversation, it is the clock: every stage between the caller
   finishing a sentence and hearing a reply has to fit inside the window where a
   pause still feels like a conversation.
-flow:
+architecture:
   label: Call lifecycle
-  steps:
-    - label: Caller
+  figure: 1
+  stages:
+    # The call opens and closes on the same participant, so the two stages
+    # share a label and are told apart by their ids.
+    - id: caller-inbound
+      label: Caller
       detail: Inbound call to a business number
-    - label: Twilio
+    - id: twilio
+      label: Twilio
       detail: Telephony transport and audio streaming
-    - label: VERA
+    - id: vera
+      label: VERA
       detail: Session handling and conversation memory
-    - label: Gemini
+    - id: gemini
+      label: Gemini
       detail: Understanding and response generation
-    - label: Retrieval and tools
+    - id: retrieval-tools
+      label: Retrieval and tools
       detail: Vector search over domain knowledge, dynamic tool selection
       gate: true
-    - label: Speech
+    - id: speech
+      label: Speech
       detail: Generated response returned as audio
-    - label: Caller
+    - id: caller-reply
+      label: Caller
       detail: Reply heard in-call
 decisions:
   - title: Latency treated as the primary constraint
@@ -88,7 +98,7 @@ figures:
   - figure: 1
     kind: diagram
     span: full
-    ratio: 21 / 9
+    ratio: auto
     caption: >-
       Call lifecycle: inbound call through Twilio into VERA, with Gemini,
       retrieval and tool selection producing the spoken response.

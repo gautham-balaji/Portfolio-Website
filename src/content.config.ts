@@ -42,13 +42,105 @@ const metric = z.object({
   note: z.string().optional(),
 });
 
-/** One node in a system flow. */
-const flowStep = z.object({
+/**
+ * Architecture (P2.1).
+ *
+ * One canonical description of how a project works, replacing the pair of
+ * sources that preceded it: a `flow` block here and a matching entry in
+ * `src/lib/architectureDiagrams.ts`. Keeping them apart meant the drawing and
+ * the reading of it could disagree, and they had: GeoCounterfactual's diagram
+ * omitted the Earth observation stage, Legal NLP marked its decision point on
+ * a different stage in each, and the return edge existed in only one of them.
+ *
+ * Everything the two used to carry between them is expressible here, so the
+ * page renders one architecture and every projection of it is derived rather
+ * than restated.
+ */
+
+/** Slug shape for stage and node ids. Stable, and safe in a fragment. */
+const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'must be lower-case kebab-case');
+
+/** One box in the drawing. */
+const architectureNode = z.object({
+  id: slug,
   label: z.string(),
   detail: z.string().optional(),
-  /** Marks a decision point, e.g. the GeoCounterfactual critic. */
-  gate: z.boolean().default(false),
 });
+
+/**
+ * One column of the pipeline.
+ *
+ * Normally a single labelled step. A stage may instead hold two nodes that run
+ * alongside each other and rejoin (the chess CNN beside the classical
+ * features, the two Legal NLP retrieval signals), which is structure the old
+ * `flow` list could not express at all. A paired stage may still carry its own
+ * label where the grouping is itself documented, as Legal NLP's "Hybrid
+ * retrieval" is.
+ */
+const architectureStage = z
+  .object({
+    id: slug,
+    label: z.string().optional(),
+    detail: z.string().optional(),
+    /** Marks a decision point, e.g. the GeoCounterfactual critic. */
+    gate: z.boolean().default(false),
+    nodes: z.array(architectureNode).length(2).optional(),
+  })
+  .refine((stage) => Boolean(stage.label) || Boolean(stage.nodes), {
+    message: 'a stage needs either a label of its own or a pair of nodes',
+  });
+
+const architecture = z
+  .object({
+    /** The pipeline's own name, e.g. "Call lifecycle". */
+    label: z.string(),
+    /** Which declared figure slot this drawing fills. */
+    figure: z.number().int().positive(),
+    stages: z.array(architectureStage).min(2),
+    /**
+     * A documented return path, e.g. GeoCounterfactual's critic rejecting
+     * back to the generator. Endpoints are stage ids rather than array
+     * positions: the previous model used indices, so inserting a stage
+     * silently repointed the edge at the wrong boxes.
+     */
+    loop: z
+      .object({
+        from: slug,
+        to: slug,
+        label: z.string(),
+      })
+      .optional(),
+  })
+  .superRefine((value, ctx) => {
+    const stageIds = new Set<string>();
+    const allIds: string[] = [];
+
+    for (const stage of value.stages) {
+      stageIds.add(stage.id);
+      allIds.push(stage.id);
+      for (const node of stage.nodes ?? []) allIds.push(node.id);
+    }
+
+    const duplicates = allIds.filter((id, i) => allIds.indexOf(id) !== i);
+    if (duplicates.length > 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `duplicate architecture ids: ${[...new Set(duplicates)].join(', ')}`,
+        path: ['stages'],
+      });
+    }
+
+    for (const end of ['from', 'to'] as const) {
+      const target = value.loop?.[end];
+      if (target && !stageIds.has(target)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `loop.${end} "${target}" does not match any stage id`,
+          path: ['loop', end],
+        });
+      }
+    }
+  });
 
 /** A named engineering decision and the reasoning behind it. */
 const decision = z.object({
@@ -111,15 +203,12 @@ const projects = defineCollection({
       thesis: z.string().optional(),
 
       /**
-       * The system flow, rendered as both a diagram and an ordered list so the
-       * diagram is never the only way to read it (DESIGN_SYSTEM §33).
+       * The canonical architecture. Rendered once per detail page as a
+       * topology drawing plus a visible stage legend, and projected onto the
+       * homepage index as a compact rail, so the drawing is never the only
+       * way to read it (DESIGN_SYSTEM §33).
        */
-      flow: z
-        .object({
-          label: z.string(),
-          steps: z.array(flowStep).min(2),
-        })
-        .optional(),
+      architecture: architecture.optional(),
 
       /** Named engineering decisions, the most interesting part of each story. */
       decisions: z.array(decision).default([]),

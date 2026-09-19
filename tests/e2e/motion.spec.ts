@@ -310,15 +310,18 @@ test.describe('row schematics', () => {
     await context.close();
   });
 
-  test('name every stage from the documented flow, not a second copy of it', async ({
+  test('name every stage from the canonical architecture, not a second copy of it', async ({
     page,
   }) => {
-    // The schematic must stay a second view of the architecture, never a
-    // second source of it: each node is a step from the project's `flow`.
+    // The schematic must stay a projection of the architecture, never a
+    // second source of it: each node is a stage from the project's canonical
+    // `architecture` block, which is also what the detail page's legend
+    // renders. P2.1 made that one source instead of two.
     await page.goto('/projects/vera');
     const detailStages = await page
-      .locator('.flow-steps .step-label')
+      .locator('.stage-list > .stage > .stage-body > .stage-label')
       .evaluateAll((els) => els.map((el) => el.textContent?.trim().toUpperCase()));
+    expect(detailStages.length).toBeGreaterThan(0);
 
     await page.goto('/');
     const rowStages = await page
@@ -328,6 +331,17 @@ test.describe('row schematics', () => {
       .evaluateAll((els) => els.map((el) => el.firstChild?.textContent?.trim().toUpperCase()));
 
     expect(rowStages).toEqual(detailStages);
+  });
+
+  test('carry GeoCounterfactual’s return path through to the homepage', async ({ page }) => {
+    // The loop label used to be read from a separate module purely so the
+    // row could show it. It now comes through the same projection as the
+    // stage names.
+    await page.goto('/');
+    const rows = page.locator('[data-project-index] .row');
+    await expect(rows.nth(2).locator('.sch-loop')).toHaveCount(1);
+    await expect(rows.nth(0).locator('.sch-loop')).toHaveCount(0);
+    await expect(rows.nth(1).locator('.sch-loop')).toHaveCount(0);
   });
 });
 
@@ -381,8 +395,31 @@ test.describe('architecture diagrams', () => {
       .evaluateAll((els) => [...new Set(els.map((el) => getComputedStyle(el).opacity))]);
     expect(opacities).toEqual(['1']);
 
-    // The accessible description is never part of the animation.
-    await expect(diagram.locator('.dg-sr li').first()).not.toBeEmpty();
+    // The legend is never part of the animation. It sits outside the drawing
+    // precisely so that the reading of the architecture cannot be staggered,
+    // delayed or hidden by the drawing of it.
+    const legend = page.locator('.stage-list');
+    await expect(legend.locator('> .stage').first()).toBeVisible();
+    const legendOpacity = await legend.evaluate((el) => getComputedStyle(el).opacity);
+    expect(Number(legendOpacity)).toBe(1);
+  });
+
+  test('keep the legend readable with JavaScript disabled', async ({ browser }) => {
+    // The drawing is an enhancement; the stage list is the content.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto('/projects/geocounterfactual');
+
+    await expect(page.locator('.stage-list > .stage')).toHaveCount(7);
+    const invisible = await page
+      .locator('.stage-list > .stage')
+      .evaluateAll(
+        (els) => els.filter((el) => Number(getComputedStyle(el).opacity) < 0.05).length,
+      );
+    expect(invisible).toBe(0);
+    await expect(page.getByText(/on reject, returns to Generator/i)).toHaveCount(1);
+
+    await context.close();
   });
 });
 

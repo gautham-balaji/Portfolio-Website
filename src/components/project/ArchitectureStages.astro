@@ -1,0 +1,179 @@
+---
+/**
+ * The architecture legend.
+ *
+ * A numbered list of the stages in the drawing above it, each with the full
+ * detail the project documents. This is the successor to FlowDiagram.astro,
+ * and it exists for the same reason (DESIGN_SYSTEM §33): the shapes must
+ * never be the only way to read the system. What changed in P2.1 is that it
+ * is no longer a second, independent block further down the page describing a
+ * slightly different pipeline. It is the legend of one figure, numbered to
+ * match the drawing, sharing one caption and one figure number with it, and
+ * built from the same canonical stage list.
+ *
+ * Because it is real markup rather than SVG text, it reads correctly with CSS
+ * unavailable, in reading mode and in a screen reader, it wraps at a real
+ * type size, and it is where the detail the drawing used to truncate now
+ * lives. The drawing keeps its own accessible name for topology; this keeps
+ * the substance. Between them nothing is announced twice.
+ *
+ * Per §52 the visual language is unchanged: hairlines, mono labels, Oxide
+ * reserved for the decision point.
+ */
+import type { ArchitectureStage, ResolvedLoop } from '@/lib/architecture';
+
+interface Props {
+  /** The pipeline's own name, e.g. "Call lifecycle". Names the list. */
+  label: string;
+  stages: ArchitectureStage[];
+  loop?: ResolvedLoop | undefined;
+}
+
+const { label, stages, loop } = Astro.props;
+---
+
+<div class="stages">
+  <ol class="stage-list" aria-label={`${label}: stages`}>
+    {stages.map((stage, i) => (
+      <li
+        class:list={['stage', { 'is-gate': stage.gate, 'is-parallel': Boolean(stage.nodes) }]}
+        data-stage={stage.id}
+      >
+        <p class="label stage-index">{String(i + 1).padStart(2, '0')}</p>
+
+        <div class="stage-body">
+          {stage.label && <p class="stage-label">{stage.label}</p>}
+          {stage.detail && <p class="stage-detail">{stage.detail}</p>}
+
+          {/* A gate is marked by more than Oxide: colour alone would not
+              survive a reader who cannot see it (§33). */}
+          {stage.gate && <p class="label stage-flag">Decision point</p>}
+
+          {/* The documented return path, stated where it leaves rather than
+              only drawn. Replaces the visually hidden sentence the old SVG
+              carried, so every reader gets it. */}
+          {loop && loop.from === stage.id && (
+            <p class="label stage-flag stage-loop">
+              <span aria-hidden="true">&#8634;</span>
+              {`On ${loop.label}, returns to ${loop.toLabel}`}
+            </p>
+          )}
+
+          {stage.nodes && (
+            <ul class="stage-nodes">
+              {stage.nodes.map((node) => (
+                <li class="stage-node" data-stage={node.id}>
+                  <p class="stage-label stage-node-label">{node.label}</p>
+                  {node.detail && <p class="stage-detail">{node.detail}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .stages {
+    margin-top: clamp(1.25rem, 3vw, 1.75rem);
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .stage-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1rem;
+    align-items: baseline;
+    padding-block: 0.8125rem;
+    border-top: var(--border-thin) solid var(--color-paper-soft);
+  }
+
+  .stage:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .stage-index {
+    color: var(--color-graphite-text);
+  }
+
+  .is-gate .stage-index {
+    color: var(--color-oxide-text);
+  }
+
+  .stage-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+    /* Wrap at spaces only. break-word splits "INTERVENTION" mid-word, which
+       reads as a rendering fault rather than a line break. */
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+
+  .is-gate > .stage-body > .stage-label {
+    color: var(--color-oxide-text);
+  }
+
+  .stage-detail {
+    margin-top: 0.3125rem;
+    font-size: var(--text-meta);
+    line-height: 1.55;
+    color: var(--color-graphite-text);
+    max-width: 62ch;
+  }
+
+  /* Each flag takes its own line. As inline-flex the decision marker and the
+     return path ran together into one unreadable string. `max-content` keeps
+     the box to the width of its own text so the flags still read as marks on
+     the stage rather than as full-width rows. */
+  .stage-flag {
+    margin-top: 0.4375rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.375em;
+    width: max-content;
+    max-width: 100%;
+    color: var(--color-oxide-text);
+  }
+
+  .stage-loop {
+    margin-top: 0.3125rem;
+  }
+
+  /* A paired stage keeps one number: the two nodes are one step of the
+     pipeline that happens to run on two tracks, not two steps. */
+  .stage-nodes {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0 0 0 0.9375rem;
+    display: grid;
+    gap: 0.6875rem;
+    border-left: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .stage-node-label {
+    font-size: var(--text-meta-sm);
+    color: var(--color-ink);
+  }
+
+  @media (min-width: 768px) {
+    .stage-nodes {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 1.5rem;
+    }
+  }
+</style>
