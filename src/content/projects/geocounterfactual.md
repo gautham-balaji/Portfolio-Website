@@ -41,12 +41,15 @@ architecture:
     - id: planner
       label: Planner
       detail: Gemini parses intent into a structured plan
+      section: the-architecture-principle
     - id: earth-observation
       label: Earth observation
       detail: Sentinel-2, Copernicus DEM, ESA WorldCover, CHIRPS at 10m
+      section: earth-observation-data
     - id: dynamics
       label: Dynamics
       detail: Deterministic NumPy hydro-ecological constraints, D8 routing
+      section: constraints
     - id: generator
       label: Generator
       detail: Stable Diffusion 1.5 with ControlNet proposes imagery
@@ -56,6 +59,7 @@ architecture:
         Accept, or reject and route back to the generator, on gravity and
         slope, spectral and SSIM checks
       gate: true
+      section: the-critic
     - id: simulation
       label: Simulation
       detail: Accepted counterfactual with XAI overlay
@@ -65,6 +69,7 @@ architecture:
     label: reject
 decisions:
   - title: A deterministic critic instead of an LLM vision critic
+    stage: critic
     body: >-
       The critic is NumPy, not a model. Asking a vision model whether generated
       imagery looks plausible replaces one unverifiable judgment with another.
@@ -72,17 +77,20 @@ decisions:
       is a calculation with an answer. The validation layer is the part that has
       to be trustworthy, so it is the part with no learned component in it.
   - title: Earth Engine batch export rather than synchronous getInfo
+    stage: earth-observation
     body: >-
       Extraction over multiple watersheds and multiple years exceeds what
       synchronous getInfo calls can carry. Moving to Batch Export made
       long-running data extraction survivable, at the cost of an asynchronous
       job model the rest of the pipeline has to accommodate.
   - title: Client-side rainfall filtering
+    stage: earth-observation
     body: >-
       Rainfall filtering happens after extraction rather than inside it, so that
       adjusting the confound threshold does not require rerunning hours of Earth
       Engine export. The expensive step is made reusable instead of repeatable.
   - title: A StubGenerator fallback
+    stage: generator
     body: >-
       Generation runs on remote Colab through Ngrok, which fails often enough to
       matter. A stub generator keeps the orchestration, dynamics and critic path

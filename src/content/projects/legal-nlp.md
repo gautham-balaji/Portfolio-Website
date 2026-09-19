@@ -40,30 +40,37 @@ architecture:
     - id: nlp-extraction
       label: NLP extraction
       detail: Legal NER plus pattern matching for IPC and CrPC references
+      section: extraction
     - id: entities-relations
       label: Entities and relations
       detail: Cases, statutes, sections, courts, judges
+      section: extraction
     - id: knowledge-graph
       label: Knowledge graph
       detail: CITES, APPLIES, DECIDED_BY, INVOLVES
+      section: the-graph
     # The decision point, and the one stage that is itself a pair: the two
     # retrieval signals are scored together rather than in sequence.
     - id: hybrid-retrieval
       label: Hybrid retrieval
       detail: Semantic search and graph signals scored together
       gate: true
+      section: hybrid-retrieval
       nodes:
         - id: semantic-search
           label: Semantic search
           detail: Sentence embeddings
+          section: hybrid-retrieval
         - id: graph-signals
           label: Graph signals
           detail: Citation structure
+          section: hybrid-retrieval
     - id: ranked-cases
       label: Ranked cases
       detail: Combined-score reranking with an explanation
 decisions:
   - title: Two retrieval signals instead of one
+    stage: hybrid-retrieval
     body: >-
       Sentence Transformer embeddings find judgments that read alike. Citation
       structure finds judgments that are connected, even when the wording
@@ -71,6 +78,7 @@ decisions:
       search misses: a precedent phrased quite differently but central to the
       citation network.
   - title: Pattern matching alongside learned extraction
+    stage: nlp-extraction
     body: >-
       Statutory references such as IPC and CrPC sections follow strict, known
       formats. Handling them with explicit patterns rather than leaving them to

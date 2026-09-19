@@ -248,11 +248,28 @@
      landed with the section label hidden behind the bar. `scroll-margin-top`
      fixes that in the browser's own scrolling, which means no scroll
      handler, no hijacking and no JavaScript of any kind. The extra 1.5rem is
-     breathing room so the label does not sit flush against the rule. */
+     breathing room so the label does not sit flush against the rule.
+
+     P2.2 adds the two id-bearing targets the project pages introduced. They
+     are listed unconditionally rather than left to `:target` alone: a prose
+     heading is not a `main section[id]`, and relying on `:target` means the
+     offset is only in effect once the fragment matches, which is not
+     dependable for a fragment that is already in the URL on first load. */
   main section[id],
   #main,
+  .prose > h2,
+  [id^='stage-'],
   :target {
     scroll-margin-top: calc(var(--nav-height) + var(--border-thin) + 1.5rem);
+  }
+
+  /* Architecture stages carry tabindex="-1" for the same reason <main> does
+     below: a decision's "governed by" link should leave focus on the stage it
+     jumped to, not back where it came from. They are programmatic focus
+     targets rather than controls, never reachable by Tab, so they take no
+     focus ring; the stage's own link inside still shows its own. */
+  [id^='stage-']:focus {
+    outline: none;
   }
 
   /* The skip link's target carries tabindex="-1" so it can take focus: without

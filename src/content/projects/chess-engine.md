@@ -29,6 +29,7 @@ architecture:
     - id: position
       label: Position
       detail: 8x8x12 planes, one per piece type per colour
+      section: board-representation-and-the-network
     # The learned and the hand-written signals run alongside each other and
     # rejoin at the fusion step. Reading them as two sequential stages, as the
     # old flow list had to, misses the point of the architecture.
@@ -37,26 +38,32 @@ architecture:
         - id: cnn
           label: CNN
           detail: Predicts a Stockfish centipawn evaluation
+          section: board-representation-and-the-network
         - id: classical-features
           label: Classical features
           detail: Material, space, centre control, mobility
+          section: the-classical-layer
     - id: ridge-fusion
       label: Ridge fusion
       detail: Weighted combination into one hybrid score
+      section: fusion
     - id: rerank
       label: Rerank
       detail: Heuristic bonuses plus one-ply opponent lookahead
+      section: reranking
     - id: move-explanation
       label: Move + explanation
       detail: Ranked moves with checkable reasoning
 decisions:
   - title: Predict an existing evaluation rather than learn from self-play
+    stage: cnn
     body: >-
       The network is trained on roughly 50,000 positions evaluated by Stockfish
       at depth 8, so it learns to approximate a known-good evaluation function
       instead of discovering one. That makes the learned component measurable
       against a reference rather than only against itself.
   - title: Ridge regression for fusion, not another network
+    stage: ridge-fusion
     body: >-
       A linear model keeps the contribution of each signal inspectable. The
       fitted weights show the normalised CNN score dominating at 330.9, with
@@ -64,6 +71,7 @@ decisions:
       0.019. A second neural layer would have scored just as well while hiding
       exactly the information the project exists to expose.
   - title: Explanations from checkable conditions, not from the model
+    stage: move-explanation
     body: >-
       explain_move() derives its reasoning from board conditions that can be
       independently verified: centre control, minor-piece development, pawn

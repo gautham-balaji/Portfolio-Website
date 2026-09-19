@@ -17,6 +17,9 @@ import { file, glob } from 'astro/loaders';
 // Astro's bundled zod or every entry infers as `any`. Application code
 // (src/lib) uses the standalone zod 4 package instead.
 import { z } from 'astro/zod';
+// Pure, dependency-free helpers shared by this schema, the project layout and
+// the unit tests, so all three resolve references the same way.
+import { unknownStageRefs } from './lib/crossReferences';
 
 /**
  * Project status values.
@@ -60,11 +63,27 @@ const metric = z.object({
 /** Slug shape for stage and node ids. Stable, and safe in a fragment. */
 const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'must be lower-case kebab-case');
 
+/**
+ * A prose section this part of the architecture is explained in (P2.2).
+ *
+ * The value is a markdown heading slug from the same project's body, so it
+ * cannot be checked here: the schema runs over frontmatter, and the slugs do
+ * not exist until the body has been rendered. ProjectLayout resolves them
+ * against the real heading list and fails the build on a miss.
+ *
+ * Optional everywhere and deliberately sparse. A stage is mapped only where
+ * the prose plainly explains that stage; anything arguable is left unmapped
+ * rather than guessed, because a wrong link is a false statement about how
+ * the system works.
+ */
+const sectionRef = slug.optional();
+
 /** One box in the drawing. */
 const architectureNode = z.object({
   id: slug,
   label: z.string(),
   detail: z.string().optional(),
+  section: sectionRef,
 });
 
 /**
@@ -84,6 +103,7 @@ const architectureStage = z
     detail: z.string().optional(),
     /** Marks a decision point, e.g. the GeoCounterfactual critic. */
     gate: z.boolean().default(false),
+    section: sectionRef,
     nodes: z.array(architectureNode).length(2).optional(),
   })
   .refine((stage) => Boolean(stage.label) || Boolean(stage.nodes), {
@@ -142,10 +162,23 @@ const architecture = z
     }
   });
 
-/** A named engineering decision and the reasoning behind it. */
+/**
+ * A named engineering decision and the reasoning behind it.
+ *
+ * `stage` names the architecture stage or node the decision governs, so the
+ * reasoning and the box it applies to are one click apart instead of two
+ * screens. Optional, and left unset wherever no single stage is the right
+ * answer: Integrated Gradients is not a pipeline stage, Legal NLP's
+ * classification is absent from the architecture entirely, and VERA's latency
+ * decision shapes the whole pipeline rather than one part of it.
+ *
+ * Validated against the project's own architecture in the collection schema
+ * below, so a reference cannot survive a stage being renamed.
+ */
 const decision = z.object({
   title: z.string(),
   body: z.string(),
+  stage: slug.optional(),
 });
 
 export type ProjectFigureKind = 'screenshot' | 'diagram' | 'chart' | 'map';
@@ -178,60 +211,89 @@ const figureSchema = (image: SchemaContext['image']) =>
 const projects = defineCollection({
   loader: glob({ base: './src/content/projects', pattern: '**/*.md' }),
   schema: ({ image }) =>
-    z.object({
-      // --- identity and ordering -------------------------------------------
-      title: z.string(),
-      /** Position in the 01-04 Selected Work sequence (MASTER_CONTENT §07). */
-      order: z.number().int().positive(),
-      featured: z.boolean().default(false),
+    z
+      .object({
+        // --- identity and ordering -------------------------------------------
+        title: z.string(),
+        /** Position in the 01-04 Selected Work sequence (MASTER_CONTENT §07). */
+        order: z.number().int().positive(),
+        featured: z.boolean().default(false),
 
-      // --- locked metadata --------------------------------------------------
-      status: projectStatus,
-      year: z.number().int().min(2000).max(2100),
-      role: z.string(),
+        // --- locked metadata --------------------------------------------------
+        status: projectStatus,
+        year: z.number().int().min(2000).max(2100),
+        role: z.string(),
 
-      // --- homepage copy ----------------------------------------------------
-      /** Short bold line, e.g. "Teaching a chess engine to explain itself." */
-      positioning: z.string(),
-      /** One-sentence descriptor used in the project index. */
-      descriptor: z.string(),
-      technologies: z.array(z.string()).min(1),
+        // --- homepage copy ----------------------------------------------------
+        /** Short bold line, e.g. "Teaching a chess engine to explain itself." */
+        positioning: z.string(),
+        /** One-sentence descriptor used in the project index. */
+        descriptor: z.string(),
+        technologies: z.array(z.string()).min(1),
 
-      // --- detail page ------------------------------------------------------
-      /** Short lead paragraph under the project hero. */
-      overview: z.string().optional(),
-      thesis: z.string().optional(),
+        // --- detail page ------------------------------------------------------
+        /** Short lead paragraph under the project hero. */
+        overview: z.string().optional(),
+        thesis: z.string().optional(),
 
-      /**
-       * The canonical architecture. Rendered once per detail page as a
-       * topology drawing plus a visible stage legend, and projected onto the
-       * homepage index as a compact rail, so the drawing is never the only
-       * way to read it (DESIGN_SYSTEM §33).
-       */
-      architecture: architecture.optional(),
+        /**
+         * The canonical architecture. Rendered once per detail page as a
+         * topology drawing plus a visible stage legend, and projected onto the
+         * homepage index as a compact rail, so the drawing is never the only
+         * way to read it (DESIGN_SYSTEM §33).
+         */
+        architecture: architecture.optional(),
 
-      /** Named engineering decisions, the most interesting part of each story. */
-      decisions: z.array(decision).default([]),
+        /** Named engineering decisions, the most interesting part of each story. */
+        decisions: z.array(decision).default([]),
 
-      /** Verified measurements only. Every value carries its own qualifier. */
-      metrics: z.array(metric).default([]),
+        /** Verified measurements only. Every value carries its own qualifier. */
+        metrics: z.array(metric).default([]),
 
-      /**
-       * Stated limitations. Required in practice for every project page:
-       * MASTER_CONTENT.md §23 defines a boundary for all four projects, and
-       * stating it is what makes the rest credible.
-       */
-      limitations: z.array(z.string()).default([]),
+        /**
+         * Stated limitations. Required in practice for every project page:
+         * MASTER_CONTENT.md §23 defines a boundary for all four projects, and
+         * stating it is what makes the rest credible.
+         */
+        limitations: z.array(z.string()).default([]),
 
-      // --- links ------------------------------------------------------------
-      // Optional by design: Legal NLP and VERA have no public link, and
-      // MASTER_CONTENT.md §10 and §23 forbid inventing one.
-      github: z.url().optional(),
-      live: z.url().optional(),
+        // --- links ------------------------------------------------------------
+        // Optional by design: Legal NLP and VERA have no public link, and
+        // MASTER_CONTENT.md §10 and §23 forbid inventing one.
+        github: z.url().optional(),
+        live: z.url().optional(),
 
-      // --- figures ----------------------------------------------------------
-      figures: z.array(figureSchema(image)).default([]),
-    }),
+        // --- figures ----------------------------------------------------------
+        figures: z.array(figureSchema(image)).default([]),
+      })
+      /* Cross-field validation (P2.2). The architecture block has its own
+       refinement for ids and loop endpoints, but it cannot see `decisions`,
+       which is a sibling field. This one can, so it is where a decision's
+       reference to a stage is resolved. */
+      .superRefine((value, ctx) => {
+        const referencing = value.decisions.filter((entry) => entry.stage);
+        if (referencing.length === 0) return;
+
+        if (!value.architecture) {
+          ctx.addIssue({
+            code: 'custom',
+            message:
+              `decisions reference architecture stages ` +
+              `(${referencing.map((entry) => entry.stage).join(', ')}) ` +
+              `but this project declares no architecture`,
+            path: ['decisions'],
+          });
+          return;
+        }
+
+        for (const miss of unknownStageRefs(value.decisions, value.architecture.stages)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `decision "${miss.title}" references unknown stage "${miss.stage}"`,
+            path: ['decisions'],
+          });
+        }
+      }),
 });
 
 const experience = defineCollection({

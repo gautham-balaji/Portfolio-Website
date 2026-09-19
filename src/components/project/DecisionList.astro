@@ -6,17 +6,28 @@
  * why the alternative was rejected, which is the part of a project worth
  * reading and the part a README usually omits.
  */
+import { stageAnchorId } from '@/lib/crossReferences';
+
 interface Decision {
   title: string;
   body: string;
+  /** Architecture stage or node this decision governs, where one applies. */
+  stage?: string | undefined;
 }
 
 interface Props {
   decisions: Decision[];
   heading?: string;
+  /**
+   * Architecture id to display label (P2.2), so a decision can name the part
+   * of the system it governs and link to it. A decision whose stage is not
+   * in this map renders no reference, which is also what happens for the
+   * decisions that legitimately govern no single stage.
+   */
+  stageLabels?: Record<string, string>;
 }
 
-const { decisions, heading = 'Key decisions' } = Astro.props;
+const { decisions, heading = 'Key decisions', stageLabels = {} } = Astro.props;
 ---
 
 <div class="decisions">
@@ -29,6 +40,19 @@ const { decisions, heading = 'Key decisions' } = Astro.props;
         <div class="decision-body">
           <h3 class="decision-title">{decision.title}</h3>
           <p class="decision-text">{decision.body}</p>
+
+          {/* The part of the system this decision is about. Rendered only
+              where one stage is the right answer: Integrated Gradients is
+              not a pipeline stage, and VERA's latency decision shapes the
+              whole call rather than any single step of it. */}
+          {decision.stage && stageLabels[decision.stage] && (
+            <p class="decision-stage">
+              <span class="label decision-stage-label">Governed by</span>
+              <a class="label decision-stage-link" href={`#${stageAnchorId(decision.stage)}`}>
+                {stageLabels[decision.stage]}
+              </a>
+            </p>
+          )}
         </div>
       </li>
     ))}
@@ -76,5 +100,36 @@ const { decisions, heading = 'Key decisions' } = Astro.props;
     line-height: 1.6;
     color: var(--color-graphite-text);
     max-width: 68ch;
+  }
+
+  .decision-stage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 0.625rem;
+    margin-top: 0.625rem;
+  }
+
+  .decision-stage-label {
+    color: var(--color-graphite-text);
+  }
+
+  .decision-stage-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-oxide-text);
+    text-decoration: underline;
+    text-decoration-color: var(--color-graphite-rule);
+    text-underline-offset: 0.3em;
+    transition:
+      text-decoration-color var(--motion-fast) var(--ease-standard),
+      text-decoration-thickness var(--motion-fast) var(--ease-standard);
+  }
+
+  .decision-stage-link:hover,
+  .decision-stage-link:focus-visible {
+    text-decoration-color: var(--color-oxide-rule);
+    text-decoration-thickness: 2px;
   }
 </style>

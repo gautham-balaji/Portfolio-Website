@@ -381,3 +381,182 @@ test.describe('/404 layout stability', () => {
     await context.close();
   });
 });
+
+/**
+ * P2.2: navigability and cross-references.
+ *
+ * The section index, the stage-to-prose links, the decision-to-stage
+ * back-references and the end-of-page contact lead. The theme is that every
+ * link added here has to land somewhere real, and that none of it costs the
+ * project routes their static, island-free guarantee.
+ */
+const NAVIGABLE: { slug: string; sections: number; stageLinks: number; governed: number }[] = [
+  { slug: 'chess-engine', sections: 8, stageLinks: 5, governed: 3 },
+  { slug: 'legal-nlp', sections: 7, stageLinks: 4, governed: 2 },
+  { slug: 'vera', sections: 7, stageLinks: 5, governed: 4 },
+  { slug: 'geocounterfactual', sections: 8, stageLinks: 4, governed: 4 },
+];
+
+for (const project of NAVIGABLE) {
+  test.describe(`${project.slug} navigability`, () => {
+    test('has one section index listing every prose heading', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+
+      await expect(page.locator('.section-index')).toHaveCount(1);
+      await expect(page.locator('.section-index-link')).toHaveCount(project.sections);
+
+      // Page furniture is not a section of the article.
+      const texts = await page
+        .locator('.section-index-text')
+        .evaluateAll((els) => els.map((el) => el.textContent?.trim().toLowerCase()));
+      expect(texts).not.toContain('visual evidence');
+      expect(texts).not.toContain('limitations');
+
+      // The index lists the body's own headings, in order.
+      const headings = await page
+        .locator('.prose > h2')
+        .evaluateAll((els) => els.map((el) => el.textContent?.trim()));
+      const listed = await page
+        .locator('.section-index-text')
+        .evaluateAll((els) => els.map((el) => el.textContent?.trim()));
+      expect(listed).toEqual(headings);
+    });
+
+    test('resolves every in-page link it renders', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+
+      const broken = await page.evaluate(() =>
+        [...document.querySelectorAll('a[href^="#"]')]
+          .map((a) => (a as HTMLAnchorElement).getAttribute('href')!.slice(1))
+          // "#top" is the navigation wordmark. It is a fragment the browser
+          // resolves itself, with no element behind it, and predates this work.
+          .filter((id) => id && id !== 'top' && !document.getElementById(id)),
+      );
+      expect(broken).toEqual([]);
+    });
+
+    test('emits no duplicate element ids', async ({ page }) => {
+      // Legal NLP has both a `hybrid-retrieval` stage and a `hybrid-retrieval`
+      // heading. The `stage-` prefix is what keeps them apart, and this is
+      // what stops the prefix from being dropped later.
+      await page.goto(`/projects/${project.slug}`);
+
+      const duplicates = await page.evaluate(() => {
+        const ids = [...document.querySelectorAll('[id]')].map((el) => el.id);
+        return [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
+      });
+      expect(duplicates).toEqual([]);
+    });
+
+    test('links mapped stages to their prose section and leaves the rest alone', async ({
+      page,
+    }) => {
+      await page.goto(`/projects/${project.slug}`);
+
+      const links = page.locator('.stage-link');
+      await expect(links).toHaveCount(project.stageLinks);
+
+      // Every stage link names its destination for a screen reader, rather
+      // than announcing only the stage's own name.
+      const named = await links.evaluateAll((els) =>
+        els.every((el) => /,\s*read\s+\S/i.test(el.textContent ?? '')),
+      );
+      expect(named).toBe(true);
+    });
+
+    test('links decisions back to the stage they govern', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+
+      const governed = page.locator('.decision-stage-link');
+      await expect(governed).toHaveCount(project.governed);
+
+      for (const href of await governed.evaluateAll((els) =>
+        els.map((el) => (el as HTMLAnchorElement).getAttribute('href')),
+      )) {
+        expect(href).toMatch(/^#stage-[a-z0-9-]+$/);
+        await expect(page.locator(`${href}`)).toHaveCount(1);
+      }
+    });
+
+    test('lands anchored sections clear of the sticky navigation', async ({ page }) => {
+      await page.goto(`/projects/${project.slug}`);
+      await page.evaluate(() => {
+        document.documentElement.style.scrollBehavior = 'auto';
+      });
+
+      const navHeight = await page.evaluate(
+        () =>
+          document.querySelector('.site-nav, header nav, header')?.getBoundingClientRect()
+            .height ?? 56,
+      );
+
+      const target = await page.locator('.section-index-link').last().getAttribute('href');
+      await page.locator('.section-index-link').last().click();
+      await page.waitForTimeout(250);
+
+      const top = await page.locator(target!).evaluate((el) => el.getBoundingClientRect().top);
+      expect(top).toBeGreaterThanOrEqual(navHeight - 1);
+    });
+
+    test('ends on a contact lead, after the project navigation and without a form', async ({
+      page,
+    }) => {
+      await page.goto(`/projects/${project.slug}`);
+
+      const lead = page.locator('.project-contact');
+      await expect(lead).toHaveCount(1);
+      await expect(lead.locator('#project-contact-heading')).toBeVisible();
+      await expect(page.locator('form')).toHaveCount(0);
+      // Project pages must not claim the homepage's contact anchor.
+      await expect(page.locator('#contact')).toHaveCount(0);
+
+      const order = await page.evaluate(() => {
+        const nav = document.querySelector('.project-nav')!.getBoundingClientRect().top;
+        const cta = document.querySelector('.project-contact')!.getBoundingClientRect().top;
+        return cta > nav;
+      });
+      expect(order).toBe(true);
+    });
+  });
+}
+
+test.describe('section index placement', () => {
+  test('is a sticky rail beside the prose at 1440 and a static block at 390', async ({
+    browser,
+  }) => {
+    for (const [width, expected] of [
+      [1440, 'sticky'],
+      [1024, 'sticky'],
+      [768, 'static'],
+      [390, 'static'],
+    ] as const) {
+      const context = await browser.newContext({ viewport: { width, height: 900 } });
+      const page = await context.newPage();
+      await page.goto('/projects/geocounterfactual');
+      await page.evaluate(() => document.fonts.ready);
+
+      const measured = await page.evaluate(() => {
+        const wrap = document.querySelector('.section-index-wrap')!;
+        const prose = document.querySelector('.prose')!;
+        const w = wrap.getBoundingClientRect();
+        const p = prose.getBoundingClientRect();
+        return {
+          position: getComputedStyle(wrap).position,
+          beside: w.left > p.right - 1,
+          above: w.bottom <= p.top + 1,
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+        };
+      });
+
+      expect(measured.position, `position at ${width}px`).toBe(expected);
+      if (expected === 'sticky') {
+        expect(measured.beside, `rail must sit beside the prose at ${width}px`).toBe(true);
+      } else {
+        expect(measured.above, `index must sit above the prose at ${width}px`).toBe(true);
+      }
+      expect(measured.overflow, `overflow at ${width}px`).toBeLessThanOrEqual(1);
+
+      await context.close();
+    }
+  });
+});

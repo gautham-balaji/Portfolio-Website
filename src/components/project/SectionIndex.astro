@@ -1,0 +1,115 @@
+---
+/**
+ * Section index for a project's narrative (P2.2).
+ *
+ * Built from the heading list `render()` already returns and the layout
+ * previously discarded, so it needs no new data and cannot drift from the
+ * prose: the slugs it links to are the same ones the markdown pipeline put on
+ * the headings.
+ *
+ * Only the markdown body's own h2s appear. "Visual evidence", "Limitations"
+ * and the project navigation are page furniture rather than sections of the
+ * article, and the architecture figure is a figure, so none of them are
+ * listed. Depth is filtered rather than assumed: today every project's body
+ * is flat h2s, and if an h3 ever appears it stays out of the index instead of
+ * quietly nesting it.
+ *
+ * Plain anchors. No script, no scroll observer, no active-section
+ * highlighting: that would need JavaScript and would make the index a widget
+ * rather than a contents list.
+ */
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+  /** Ties the <nav> to its own visible label. */
+  labelId?: string;
+}
+
+const { headings, labelId = 'section-index-label' } = Astro.props;
+
+const sections = headings.filter((heading) => heading.depth === 2);
+---
+
+{sections.length > 0 && (
+  <nav class="section-index" aria-labelledby={labelId}>
+    <p class="label section-index-label" id={labelId}>
+      Sections
+    </p>
+
+    <ol class="section-index-list">
+      {sections.map((section, i) => (
+        <li class="section-index-item">
+          <a class="section-index-link" href={`#${section.slug}`}>
+            <span class="label section-index-number">{String(i + 1).padStart(2, '0')}</span>
+            <span class="section-index-text">{section.text}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+)}
+
+<style>
+  .section-index {
+    padding-top: 0.875rem;
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
+  }
+
+  .section-index-label {
+    color: var(--color-oxide-text);
+  }
+
+  .section-index-list {
+    list-style: none;
+    margin: 0.875rem 0 0;
+    padding: 0;
+    /* Two columns while the index sits above the prose, so eight sections
+       cost about half the vertical space on a phone. One column once it
+       becomes the rail. */
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--grid-gap);
+  }
+
+  .section-index-link {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.625rem;
+    align-items: baseline;
+    /* Content here is small mono text; the padding is what carries the
+       44px target the rest of the site holds itself to (§33). */
+    min-height: 44px;
+    align-content: center;
+    padding-block: 0.375rem;
+    text-decoration: none;
+    color: var(--color-graphite-text);
+    transition: color var(--motion-fast) var(--ease-standard);
+  }
+
+  .section-index-link:hover,
+  .section-index-link:focus-visible {
+    color: var(--color-ink);
+  }
+
+  .section-index-number {
+    color: var(--color-graphite-text);
+  }
+
+  .section-index-link:hover .section-index-number,
+  .section-index-link:focus-visible .section-index-number {
+    color: var(--color-oxide-text);
+  }
+
+  .section-index-text {
+    font-size: var(--text-meta);
+    line-height: 1.4;
+    text-wrap: pretty;
+  }
+
+  @media (min-width: 1024px) {
+    .section-index-list {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

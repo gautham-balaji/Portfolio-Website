@@ -34,15 +34,19 @@ architecture:
     - id: caller-inbound
       label: Caller
       detail: Inbound call to a business number
+      section: the-call-lifecycle
     - id: twilio
       label: Twilio
       detail: Telephony transport and audio streaming
+      section: the-call-lifecycle
     - id: vera
       label: VERA
       detail: Session handling and conversation memory
+      section: the-call-lifecycle
     - id: gemini
       label: Gemini
       detail: Understanding and response generation
+      section: the-call-lifecycle
     - id: retrieval-tools
       label: Retrieval and tools
       detail: Vector search over domain knowledge, dynamic tool selection
@@ -53,6 +57,7 @@ architecture:
     - id: caller-reply
       label: Caller
       detail: Reply heard in-call
+      section: the-call-lifecycle
 decisions:
   - title: Latency treated as the primary constraint
     body: >-
@@ -62,24 +67,28 @@ decisions:
       a natural conversational rhythm rather than around maximising response
       quality in isolation.
   - title: Offloading text-to-speech work
+    stage: speech
     body: >-
       The key optimisation was moving text-to-speech work off the critical path
       so that speech generation stopped blocking the response cycle. This was
       the single change that most improved responsiveness. No latency figures
       are published here because none were formally measured.
   - title: Retrieval to ground the agent in company knowledge
+    stage: retrieval-tools
     body: >-
       A RAG pipeline with vector-based retrieval supplies domain-specific
       context at answer time, so the agent responds from the business's own
       material rather than from the model's general knowledge. For a
       receptionist, being wrong confidently is worse than being slow.
   - title: Multi-tool orchestration during a live call
+    stage: retrieval-tools
     body: >-
       Rather than a fixed script, the agent selects tools dynamically as the
       conversation develops. This is what separates a voice agent from an
       interactive voice response tree: the path through the call is decided at
       runtime.
   - title: Structured conversation memory
+    stage: vera
     body: >-
       Memory is kept in a structured form to maintain contextual continuity
       across a session, so the caller does not have to restate what they have

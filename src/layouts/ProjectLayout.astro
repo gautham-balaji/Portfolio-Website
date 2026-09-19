@@ -25,7 +25,10 @@ import ArchitectureDiagram from '@/components/project/ArchitectureDiagram.astro'
 import ArchitectureStages from '@/components/project/ArchitectureStages.astro';
 import MetricList from '@/components/project/MetricList.astro';
 import DecisionList from '@/components/project/DecisionList.astro';
-import { detailView } from '@/lib/architecture';
+import SectionIndex from '@/components/project/SectionIndex.astro';
+import ContactLead from '@/components/contact/ContactLead.astro';
+import { detailView, stageLabels } from '@/lib/architecture';
+import { unknownSectionRefs } from '@/lib/crossReferences';
 
 interface Props {
   project: CollectionEntry<'projects'>;
@@ -34,7 +37,7 @@ interface Props {
 }
 
 const { project, previous, next } = Astro.props;
-const { Content } = await render(project);
+const { Content, headings } = await render(project);
 
 const d = project.data;
 const description = d.overview ?? d.descriptor;
@@ -54,6 +57,31 @@ const heroIsArchitecture = Boolean(
   architecture && heroFigure && heroFigure.figure === architecture.figure,
 );
 const evidenceFigures = restFigures.filter((figure) => figure.figure !== architecture?.figure);
+
+/* P2.2: cross-references.
+
+   A stage may name the prose section that explains it. The target is a
+   markdown heading slug, which does not exist while the content schema runs,
+   so this is the first point at which the reference can be resolved at all.
+   Failing loudly here makes a stale `section:` a build error rather than a
+   link that quietly goes nowhere; the decision-to-stage direction is checked
+   by Zod, where both sides are already in hand. */
+const sectionTitles = Object.fromEntries(
+  headings.filter((heading) => heading.depth === 2).map((h) => [h.slug, h.text]),
+);
+
+if (architecture) {
+  const missing = unknownSectionRefs(architecture.stages, Object.keys(sectionTitles));
+  if (missing.length > 0) {
+    throw new Error(
+      `${project.id}: architecture references unknown prose sections ` +
+        `(${missing.map((m) => `${m.id} -> "${m.section}"`).join(', ')}). ` +
+        `Available headings: ${Object.keys(sectionTitles).join(', ')}.`,
+    );
+  }
+}
+
+const decisionStageLabels = stageLabels(project);
 ---
 
 <BaseLayout
@@ -85,6 +113,7 @@ const evidenceFigures = restFigures.filter((figure) => figure.figure !== archite
             label={architecture.label}
             stages={architecture.stages}
             loop={architecture.loop}
+            sectionTitles={sectionTitles}
           />
         </FigurePlate>
       </div>
@@ -136,6 +165,7 @@ const evidenceFigures = restFigures.filter((figure) => figure.figure !== archite
                 label={architecture.label}
                 stages={architecture.stages}
                 loop={architecture.loop}
+                sectionTitles={sectionTitles}
               />
             </FigurePlate>
           </div>
@@ -143,8 +173,17 @@ const evidenceFigures = restFigures.filter((figure) => figure.figure !== archite
       </div>
     )}
 
+    {/* P2.2: the narrative and its contents list share one grid row from
+        1024 up, so the index sticks alongside the prose instead of scrolling
+        away from it. Below that the index is simply the block above the
+        prose. Source order is index then prose either way, which is also the
+        reading order. */}
     <div class="container block">
-      <div class="grid-12">
+      <div class="grid-12 prose-block">
+        <div class="section-index-wrap">
+          <SectionIndex headings={headings} />
+        </div>
+
         <div class="prose" data-reveal>
           <Content />
         </div>
@@ -155,7 +194,7 @@ const evidenceFigures = restFigures.filter((figure) => figure.figure !== archite
       <div class="container block">
         <div class="grid-12">
           <div class="decisions-wrap" data-reveal>
-            <DecisionList decisions={d.decisions} />
+            <DecisionList decisions={d.decisions} stageLabels={decisionStageLabels} />
           </div>
         </div>
       </div>
@@ -226,6 +265,18 @@ const evidenceFigures = restFigures.filter((figure) => figure.figure !== archite
     <div class="container" data-reveal>
       <ProjectNav previous={previous} next={next} />
     </div>
+
+    {/* The same invitation the homepage ends on, without the form: project
+        routes hydrate nothing, and the form is the site's only island. No
+        `id="contact"` either, because the navigation's contact link points at
+        the homepage section that owns that anchor. */}
+    <section class="container block project-contact" aria-labelledby="project-contact-heading">
+      <div class="grid-12">
+        <div class="project-contact-lead" data-reveal>
+          <ContactLead headingId="project-contact-heading" compact />
+        </div>
+      </div>
+    </section>
   </article>
 
   <SiteFooter slot="footer" />
@@ -260,8 +311,22 @@ const evidenceFigures = restFigures.filter((figure) => figure.figure !== archite
   .architecture-wrap,
   .decisions-wrap,
   .prose,
-  .limitations {
+  .limitations,
+  .section-index-wrap,
+  .project-contact-lead {
     grid-column: 1 / -1;
+  }
+
+  /* Stacked below the rail breakpoint: contents, then the narrative. */
+  .section-index-wrap {
+    margin-bottom: clamp(2rem, 5vw, 2.75rem);
+  }
+
+  /* --- End-of-page contact --- */
+  .project-contact {
+    margin-top: clamp(3rem, 8vw, 5rem);
+    padding-top: clamp(2rem, 5vw, 3rem);
+    border-top: var(--border-thin) solid var(--color-graphite-rule);
   }
 
   .metrics-wrap {
@@ -340,7 +405,29 @@ const evidenceFigures = restFigures.filter((figure) => figure.figure !== archite
       grid-column: 1 / -1;
     }
 
+    /* The rail and the narrative share row 1. Both need an explicit row:
+       grid auto-placement never moves the cursor backwards, so the prose in
+       columns 1-7 would otherwise be pushed to a second row by the index
+       already sitting in columns 9-12. */
     .prose {
+      grid-column: 1 / span 7;
+      grid-row: 1;
+    }
+
+    .section-index-wrap {
+      grid-column: 9 / span 4;
+      grid-row: 1;
+      /* Content height, not row height: a stretched item fills its grid area
+         and has nowhere to travel, which is sticky silently doing nothing. */
+      align-self: start;
+      position: sticky;
+      /* Clears the sticky navigation, using the same offset the site's anchor
+         landings already use. */
+      top: calc(var(--nav-height) + 1.5rem);
+      margin-bottom: 0;
+    }
+
+    .project-contact-lead {
       grid-column: 1 / span 7;
     }
 

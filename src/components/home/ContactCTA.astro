@@ -2,7 +2,10 @@
 /**
  * Contact (DESIGN_SYSTEM.md §22, §48; MASTER_CONTENT.md §18).
  *
- * Left: the CTA, a large email link, and the three destinations.
+ * Left: <ContactLead />, the CTA, a large email link and the three
+ * destinations. That half is a separate component because project pages end
+ * on the same invitation but must hydrate nothing, so they render the lead
+ * without the island below.
  * Right: the form.
  *
  * The form itself is <ContactForm client:visible />, a React island: it is
@@ -21,8 +24,7 @@
  * markup need the same classes.
  */
 import ContactForm from '@/components/home/ContactForm';
-import { CONTACT } from '@/lib/copy';
-import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
+import ContactLead from '@/components/contact/ContactLead.astro';
 ---
 
 <section id="contact" class="contact section-pad" aria-labelledby="contact-heading">
@@ -30,48 +32,11 @@ import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
     <hr class="rule rule-ink" />
 
     <div class="grid-12 contact-grid">
+      {/* The lead's own markup and styling live in ContactLead.astro, which
+          project pages render on their own. This wrapper keeps the grid
+          placement and the reveal, which are this section's concern. */}
       <div class="contact-lead" data-reveal>
-        <h2 id="contact-heading" class="display contact-heading">
-          {CONTACT.heading}
-        </h2>
-
-        <p class="contact-supporting">{CONTACT.supporting}</p>
-
-        <a href={`mailto:${SITE.email}`} class="contact-email">
-          {SITE.email}
-        </a>
-
-        <ul class="contact-links">
-          <li>
-            <a
-              href={SITE.github}
-              class="contact-link"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              GitHub
-            </a>
-          </li>
-          <li>
-            <a
-              href={SITE.linkedin}
-              class="contact-link"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              LinkedIn
-            </a>
-          </li>
-          <li>
-            {RESUME_AVAILABLE ? (
-              <a href={RESUME_PATH} class="contact-link" download>
-                Resume
-              </a>
-            ) : (
-              <span class="contact-link is-unavailable">Resume coming soon</span>
-            )}
-          </li>
-        </ul>
+        <ContactLead headingId="contact-heading" />
       </div>
 
       <div class="contact-form-wrap">
@@ -92,80 +57,9 @@ import { RESUME_AVAILABLE, RESUME_PATH, SITE } from '@/lib/site';
     grid-column: 1 / -1;
   }
 
-  .contact-heading {
-    font-size: var(--text-section);
-    text-transform: uppercase;
-    max-width: 16ch;
-  }
-
-  .contact-supporting {
-    margin-top: clamp(1.25rem, 3vw, 1.75rem);
-    font-size: var(--text-body-lg);
-    line-height: 1.55;
-    color: var(--color-graphite-text);
-    max-width: 46ch;
-  }
-
-  .contact-email {
-    /* Flex with a min-height so the primary contact action clears the 44px
-       target rule even at the smallest type size (§33). */
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    margin-top: clamp(1.75rem, 4vw, 2.5rem);
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: var(--text-deck);
-    letter-spacing: -0.01em;
-    color: var(--color-ink);
-    text-decoration: underline;
-    text-decoration-color: var(--color-oxide-rule);
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.22em;
-    word-break: break-word;
-    transition: text-decoration-thickness var(--motion-fast) var(--ease-standard);
-  }
-
-  .contact-email:hover {
-    text-decoration-thickness: 3px;
-  }
-
-  .contact-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 1.75rem;
-    list-style: none;
-    margin: 1.5rem 0 0;
-    padding: 0;
-  }
-
-  .contact-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    font-family: var(--font-mono);
-    font-size: var(--text-meta-sm);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-ink);
-    text-decoration: underline;
-    text-decoration-color: var(--color-graphite-rule);
-    text-underline-offset: 0.3em;
-    transition:
-      text-decoration-color var(--motion-fast) var(--ease-standard),
-      text-decoration-thickness var(--motion-fast) var(--ease-standard);
-  }
-
-  .contact-link:hover {
-    text-decoration-color: var(--color-oxide-rule);
-    text-decoration-thickness: 2px;
-  }
-
-  .is-unavailable {
-    color: var(--color-graphite-text);
-    text-decoration: none;
-    cursor: default;
-  }
+  /* The lead's own type and link styling moved to ContactLead.astro with the
+     markup. Astro scopes styles per component, so leaving it here would have
+     left rules that no longer match anything. */
 
   .contact-form-wrap {
     margin-top: clamp(3rem, 7vw, 0);

@@ -21,15 +21,22 @@
  * reserved for the decision point.
  */
 import type { ArchitectureStage, ResolvedLoop } from '@/lib/architecture';
+import { stageAnchorId } from '@/lib/crossReferences';
 
 interface Props {
   /** The pipeline's own name, e.g. "Call lifecycle". Names the list. */
   label: string;
   stages: ArchitectureStage[];
   loop?: ResolvedLoop | undefined;
+  /**
+   * Heading slug to heading text, for the sections stages link into (P2.2).
+   * Supplied by the layout, which is where the rendered headings live. Used
+   * only to name the destination; a stage with no mapping renders no link.
+   */
+  sectionTitles?: Record<string, string>;
 }
 
-const { label, stages, loop } = Astro.props;
+const { label, stages, loop, sectionTitles = {} } = Astro.props;
 ---
 
 <div class="stages">
@@ -37,12 +44,30 @@ const { label, stages, loop } = Astro.props;
     {stages.map((stage, i) => (
       <li
         class:list={['stage', { 'is-gate': stage.gate, 'is-parallel': Boolean(stage.nodes) }]}
+        id={stageAnchorId(stage.id)}
         data-stage={stage.id}
+        tabindex="-1"
       >
         <p class="label stage-index">{String(i + 1).padStart(2, '0')}</p>
 
         <div class="stage-body">
-          {stage.label && <p class="stage-label">{stage.label}</p>}
+          {/* Where the prose explains this stage, the stage's own name is the
+              way in. A separate "read section" line would repeat itself five
+              times on VERA, where every stage is explained in one section,
+              and would add copy the content does not have. The visible text
+              stays the stage name; the destination is announced through the
+              hidden suffix so the link is not just "CALLER". */}
+          {stage.label &&
+            (stage.section && sectionTitles[stage.section] ? (
+              <p class="stage-label">
+                <a class="stage-link" href={`#${stage.section}`}>
+                  {stage.label}
+                  <span class="sr-only">, read {sectionTitles[stage.section]}</span>
+                </a>
+              </p>
+            ) : (
+              <p class="stage-label">{stage.label}</p>
+            ))}
           {stage.detail && <p class="stage-detail">{stage.detail}</p>}
 
           {/* A gate is marked by more than Oxide: colour alone would not
@@ -62,8 +87,28 @@ const { label, stages, loop } = Astro.props;
           {stage.nodes && (
             <ul class="stage-nodes">
               {stage.nodes.map((node) => (
-                <li class="stage-node" data-stage={node.id}>
-                  <p class="stage-label stage-node-label">{node.label}</p>
+                <li
+                  class="stage-node"
+                  id={stageAnchorId(node.id)}
+                  data-stage={node.id}
+                  tabindex="-1"
+                >
+                  {/* A node links only where its section differs from the one
+                      its parent stage already links to. Legal NLP's two
+                      retrieval signals share their parent's section, and
+                      three identical links in one entry is noise. */}
+                  {node.section &&
+                  node.section !== stage.section &&
+                  sectionTitles[node.section] ? (
+                    <p class="stage-label stage-node-label">
+                      <a class="stage-link" href={`#${node.section}`}>
+                        {node.label}
+                        <span class="sr-only">, read {sectionTitles[node.section]}</span>
+                      </a>
+                    </p>
+                  ) : (
+                    <p class="stage-label stage-node-label">{node.label}</p>
+                  )}
                   {node.detail && <p class="stage-detail">{node.detail}</p>}
                 </li>
               ))}
@@ -126,6 +171,31 @@ const { label, stages, loop } = Astro.props;
 
   .is-gate > .stage-body > .stage-label {
     color: var(--color-oxide-text);
+  }
+
+  /* The stage name doubling as the route into its prose section. Underlined
+     so it reads as a link rather than as a heading that happens to respond,
+     and padded to the 44px target the rest of the site keeps (§33). */
+  .stage-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-block: -0.75rem;
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--color-graphite-rule);
+    text-underline-offset: 0.3em;
+    transition:
+      color var(--motion-fast) var(--ease-standard),
+      text-decoration-color var(--motion-fast) var(--ease-standard),
+      text-decoration-thickness var(--motion-fast) var(--ease-standard);
+  }
+
+  .stage-link:hover,
+  .stage-link:focus-visible {
+    color: var(--color-oxide-text);
+    text-decoration-color: var(--color-oxide-rule);
+    text-decoration-thickness: 2px;
   }
 
   .stage-detail {

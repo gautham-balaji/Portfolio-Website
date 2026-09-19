@@ -320,7 +320,16 @@ test.describe('row schematics', () => {
     await page.goto('/projects/vera');
     const detailStages = await page
       .locator('.stage-list > .stage > .stage-body > .stage-label')
-      .evaluateAll((els) => els.map((el) => el.textContent?.trim().toUpperCase()));
+      .evaluateAll((els) =>
+        els.map((el) => {
+          // A mapped stage's label is a link carrying a visually hidden
+          // "read <section>" suffix (P2.2), which is not part of the stage's
+          // name. Compare what a sighted reader sees.
+          const copy = el.cloneNode(true) as HTMLElement;
+          copy.querySelectorAll('.sr-only').forEach((node) => node.remove());
+          return copy.textContent?.trim().toUpperCase();
+        }),
+      );
     expect(detailStages.length).toBeGreaterThan(0);
 
     await page.goto('/');
@@ -450,5 +459,73 @@ test.describe('controls', () => {
 
     expect(resting).toBe('none');
     expect(held).toBe('0px 1px');
+  });
+});
+
+test.describe('section index and cross-references without scripting', () => {
+  test('render and resolve with JavaScript disabled', async ({ browser }) => {
+    // The whole of P2.2 is anchors and markup. Nothing here may need a script
+    // to be navigable.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto('/projects/geocounterfactual');
+
+    await expect(page.locator('.section-index')).toHaveCount(1);
+    await expect(page.locator('.section-index-link')).toHaveCount(8);
+    await expect(page.locator('.stage-link')).toHaveCount(4);
+    await expect(page.locator('.decision-stage-link')).toHaveCount(4);
+
+    const broken = await page.evaluate(() =>
+      [...document.querySelectorAll('a[href^="#"]')]
+        .map((a) => (a as HTMLAnchorElement).getAttribute('href')!.slice(1))
+        .filter((id) => id && id !== 'top' && !document.getElementById(id)),
+    );
+    expect(broken).toEqual([]);
+
+    // Following one has to work with no scripting at all.
+    await page.locator('.section-index-link').first().click();
+    expect(new URL(page.url()).hash).toBe('#the-problem');
+
+    await context.close();
+  });
+
+  test('stay fully visible under reduced motion', async ({ browser }) => {
+    const context = await browser.newContext({
+      reducedMotion: 'reduce',
+      viewport: { width: 1440, height: 900 },
+    });
+    const page = await context.newPage();
+    await page.goto('/projects/geocounterfactual');
+
+    const hidden = await page
+      .locator('.section-index-link, .stage-link, .decision-stage-link')
+      .evaluateAll(
+        (els) => els.filter((el) => Number(getComputedStyle(el).opacity) < 0.05).length,
+      );
+    expect(hidden).toBe(0);
+
+    // Still a rail, still not animated into place.
+    await expect(page.locator('.section-index-wrap')).toHaveCSS('position', 'sticky');
+
+    await context.close();
+  });
+});
+
+test.describe('contact lead', () => {
+  test('is shared with the homepage without bringing the island along', async ({ page }) => {
+    // The homepage keeps exactly one island; the project page keeps none,
+    // and both render the same lead.
+    await page.goto('/');
+    await expect(page.locator('astro-island')).toHaveCount(1);
+    const homeHeading = await page.locator('#contact-heading').textContent();
+    const homeEmail = await page.locator('.contact-email').textContent();
+
+    await page.goto('/projects/vera');
+    await expect(page.locator('astro-island')).toHaveCount(0);
+    await expect(page.locator('.project-contact .contact-email')).toHaveText(
+      homeEmail!.trim(),
+    );
+    await expect(page.locator('#project-contact-heading')).toHaveText(homeHeading!.trim());
+    await expect(page.locator('.project-contact .contact-link')).toHaveCount(3);
   });
 });

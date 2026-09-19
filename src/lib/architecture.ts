@@ -81,6 +81,23 @@ export function detailView(project: Project): DetailView | undefined {
   };
 }
 
+/**
+ * Every architecture id mapped to the label a reader would recognise.
+ *
+ * Decisions reference a stage by id; the decision list has to print a name.
+ * Covers nodes as well as stages, because a decision may govern one half of a
+ * pair (chess's fusion decision is about `ridge-fusion`, but its training
+ * decision is about the `cnn` node inside the paired scoring stage).
+ */
+export function stageLabels(project: Project): Record<string, string> {
+  const labels: Record<string, string> = {};
+  for (const stage of project.data.architecture?.stages ?? []) {
+    if (stage.label) labels[stage.id] = stage.label;
+    for (const node of stage.nodes ?? []) labels[node.id] = node.label;
+  }
+  return labels;
+}
+
 /** The compact projection the homepage index rail renders. */
 export function rowView(project: Project): RowView | undefined {
   const architecture = project.data.architecture;
