@@ -5,11 +5,12 @@
  * Left: wordmark. Right: four destinations. Thin bottom rule, Paper ground,
  * low height. Never a floating pill.
  *
- * Mobile uses a native <details> disclosure rather than a scripted menu. It is
- * keyboard operable, works with JavaScript disabled, and needs no focus trap
- * because it is not modal. Phase 2 is not the interaction phase; if a modal
- * panel is wanted later it can replace this without changing the markup
- * contract.
+ * Narrow widths use a native <details> disclosure rather than a scripted
+ * menu. It is keyboard operable, works with JavaScript disabled, announces
+ * its own expanded state, and needs no focus trap because it is not modal.
+ * The script at the bottom of this file adds only the three things the
+ * element genuinely lacks (Escape, close-on-choose, and not reopening itself
+ * after a back-navigation); it never takes over opening or closing.
  */
 import { NAV_ITEMS } from '@/lib/copy';
 import { SITE } from '@/lib/site';
@@ -176,7 +177,28 @@ import { SITE } from '@/lib/site';
     border-bottom: 0;
   }
 
-  @media (min-width: 1024px) {
+  /* --- Where the real navigation starts -----------------------------------
+     Measured, not assumed. With the desktop list forced on and the web font
+     loaded, the distance between the wordmark and the first link runs:
+
+       480px   wordmark wraps to two lines        unusable
+       520px   26px between wordmark and links    cramped
+       560px   63px                               tight
+       600px   100px                              comfortable
+       640px   137px                              comfortable
+       768px   245px                              comfortable
+
+     So the bar physically fits from about 520 and reads comfortably from 600.
+     640 is the switch: it keeps roughly 40px of margin over the first
+     comfortable width, which covers the difference between IBM Plex Mono and
+     whatever fallback is rendering before the font arrives, and it is the
+     point where the container stops tracking the viewport and settles onto a
+     stepped width, so the spacing above it is predictable.
+
+     The old value was 1024, which handed a hamburger to every tablet and
+     small laptop window that had room for the real thing several hundred
+     pixels earlier. */
+  @media (min-width: 640px) {
     .nav-list {
       display: flex;
     }
@@ -186,3 +208,55 @@ import { SITE } from '@/lib/site';
     }
   }
 </style>
+
+<script>
+  /**
+   * Three behaviours the native disclosure does not provide on its own.
+   *
+   * Everything else is left to <details>: it opens, closes, is keyboard
+   * operable and announces its own expanded state without help, and it all
+   * still works with this script absent. There is no focus trap, because the
+   * panel is not modal, and no global key handler: the listener below is
+   * bound to the <details> element, so Escape anywhere else on the page is
+   * none of this component's business.
+   */
+  const nav = document.querySelector<HTMLDetailsElement>('.nav-disclosure');
+
+  if (nav) {
+    const summary = nav.querySelector('summary');
+
+    const close = (returnFocus: boolean) => {
+      if (!nav.open) return;
+      nav.open = false;
+      // Escape is a dismissal, so focus goes back to the control that opened
+      // the panel rather than being dropped on <body>. Following a link is
+      // not a dismissal: there the destination should keep the focus.
+      if (returnFocus) summary?.focus();
+    };
+
+    // 1. Escape closes it. <details> has no native Escape handling.
+    nav.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') close(true);
+    });
+
+    // 2. Choosing a destination closes it. Every link here is a same-page
+    //    anchor, so nothing unloads and the panel would otherwise stay open
+    //    over the section the reader just asked for.
+    nav.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) close(false);
+    });
+
+    // 3. Coming back to the page must not restore a panel left open. A
+    //    bfcache restore returns the DOM exactly as it was, open attribute
+    //    included, which reads as the menu having opened by itself.
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) close(false);
+    });
+
+    // Widening past the breakpoint hides the disclosure while leaving it
+    // open, so it would be open again on the way back down.
+    window.matchMedia('(min-width: 640px)').addEventListener('change', (event) => {
+      if (event.matches) close(false);
+    });
+  }
+</script>

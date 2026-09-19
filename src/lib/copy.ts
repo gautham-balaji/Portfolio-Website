@@ -22,12 +22,21 @@ export const HERO = {
   scrollHint: 'SCROLL TO EXPLORE',
 } as const;
 
-/** MASTER_CONTENT.md §21. Resume is listed as optional. */
+/**
+ * MASTER_CONTENT.md §21. Resume is listed as optional.
+ *
+ * Root-relative, not bare fragments. The header renders on every route, and
+ * these four sections only exist on the homepage: as `#work` the links were
+ * dead on all four project pages and on the 404, appending a fragment to the
+ * current URL and going nowhere. `/#work` returns to the homepage and lands
+ * on the section from anywhere, and from the homepage itself it is still a
+ * same-document fragment navigation, so nothing reloads.
+ */
 export const NAV_ITEMS = [
-  { label: 'Work', href: '#work' },
-  { label: 'Experience', href: '#experience' },
-  { label: 'About', href: '#about' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Work', href: '/#work' },
+  { label: 'Experience', href: '/#experience' },
+  { label: 'About', href: '/#about' },
+  { label: 'Contact', href: '/#contact' },
 ] as const;
 
 /** MASTER_CONTENT.md §13. */
