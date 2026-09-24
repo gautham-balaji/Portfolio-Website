@@ -654,12 +654,19 @@
        and empty, out-weighing the writing around it. Real images are
        unaffected; this caps the placeholder only.
 
+       Tightened from 26rem after visual QA: at 26rem the flagship's uncaptured
+       FIG. 01 still measured roughly 740x460 on the homepage, which made an
+       empty rectangle the largest element on the page and the loudest thing
+       about the flagship project. The plate's job is to say what evidence
+       belongs here and does not exist yet, and it says that just as clearly
+       at this height. Interim, until the real capture lands.
+
        `width: 100%` is required alongside it: with only max-height, the box
        honours its aspect-ratio by narrowing as well as shortening, and the
        plate stopped filling its column while the figcaption rule beneath it
        still ran the full width. */
     width: 100%;
-    max-height: 26rem;
+    max-height: 18rem;
   }
 
   .plate::before,

@@ -152,7 +152,16 @@ const schematic = rowView(project);
       translate var(--motion-base) var(--ease-standard);
   }
 
-  @media (hover: hover) and (pointer: fine) {
+  /* All three conditions have to hold before the schematic is hidden at rest,
+     and the width one was added after visual QA: a desktop browser narrowed
+     to 390px still reports hover and a fine pointer, so the rail stayed at
+     opacity 0 while its 99px of reserved space remained, leaving a hole in a
+     615px row. A window that narrow is mobile whatever the pointer is.
+
+     Left as a conjunction on purpose. A touch tablet wider than 1024px has
+     no hover, so this block does not match there either and the schematic
+     stays visible, which is the case §40 actually cares about. */
+  @media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
     .row-schematic {
       opacity: 0;
       translate: 0 0.25rem;
@@ -324,7 +333,7 @@ const schematic = rowView(project);
      The delay is applied to the reveal only, never to the return: leaving a
      row drops the delay to zero so the schematic goes at once instead of
      unwinding node by node behind the pointer. */
-  @media (hover: hover) and (pointer: fine) {
+  @media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
     .row-schematic .sch-node {
       opacity: 0;
       transition: opacity var(--motion-base) var(--ease-standard);
